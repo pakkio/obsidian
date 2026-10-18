@@ -29,5 +29,7 @@
 ## Note
 Tutti i repo propri ora hanno un README (aggiunti il 2026-10-18, anche per i placeholder `project`, `pluto`, `vr`). `spazio2.6.x` è un archivio Maven/Java multi-modulo (JMSHammer, connettori PeSIT/SFTP/FTPS, SPXP).
 
+Verifica 2026-10-18: tutti i repo hanno un README tranne il fork `logparse` (lasciato com'è, è di terzi).
+
 ## Altro
 - `obsidian` – questo vault Obsidian (pubblicato su GitHub)
