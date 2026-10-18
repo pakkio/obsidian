@@ -1,3 +1,12 @@
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .trash/
+# third-party plugin code and settings (settings can hold API keys), and the embeddings index
+.obsidian/plugins/
+.smart-env/
+
+
+
+
+# Ignore Smart Environment folder
+.smart-env

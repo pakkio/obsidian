@@ -1,0 +1,35 @@
+# Python
+
+Linguaggio di programmazione interpretato, usato in molti progetti del vault per scripting, LLM, web e automazione.
+
+## Progetti collegati
+
+- [[MSA]]
+- [[agent]]
+- [[assegna]]
+- [[cck]]
+- [[chatgroup]]
+- [[craftsim]]
+- [[craftstorm]]
+- [[gemmafunction]]
+- [[googlelivetranslate]]
+- [[jev-biblio]]
+- [[jev-news]]
+- [[jev-pakkio]]
+- [[jev-rag]]
+- [[llmwiki]]
+- [[local_llm]]
+- [[marker1]]
+- [[mcp-blender]]
+- [[mragent]]
+- [[nexus]]
+- [[nispa-ocr]]
+- [[ocrlocal]]
+- [[opensim-cpp]]
+- [[rlm]]
+- [[search]]
+- [[soup-pakkio]]
+- [[spirale]]
+- [[subq]]
+- [[subs]]
+- [[tbi]]
