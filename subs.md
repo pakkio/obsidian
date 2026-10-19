@@ -6,7 +6,7 @@
 [[CLI]] [[JavaScript]] [[Python]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 18 file._
+Script per generare sottotitoli SRT (soprattutto italiani) da video con Whisper: estrazione audio, unione di SRT con offset, correzioni post-processing, più un test OpenRouter/Gemini per descrivere un video. README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 18 file.
 
 ## Tech Stack
 - Linguaggi: Python (11), JavaScript (1)

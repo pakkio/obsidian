@@ -6,7 +6,7 @@
 [[JavaScript]] [[Web]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 7 file._
+Partita a scacchi contro un LLM via OpenRouter, da terminale (`chess-ai.js`) o dal browser (Express + `public/index.html`); `chess.js` valida le mosse. README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 7 file.
 
 ## Tech Stack
 - Linguaggi: JavaScript (3)

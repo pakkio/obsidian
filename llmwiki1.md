@@ -6,7 +6,7 @@
 [[LLM]] [[TypeScript]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 11 file._
+Riscrittura TypeScript del wiki LLM su OpenRouter: per ora solo scaffolding (`src/storage.ts` con test, design e piano in `docs/plans/`); `wiki.ts` e i comandi non esistono ancora. Vedi [[llmwiki]] per la versione funzionante. README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 11 file.
 
 ## Tech Stack
 - Linguaggi: TypeScript (2)

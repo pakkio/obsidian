@@ -6,7 +6,7 @@
 [[JavaScript]] [[LLM]] [[Python]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 69 file._
+Esperimenti di generatore wiki (stesso nucleo di [[agent]] e [[llmwiki]]) più `wiki_web.py`, che trasforma una cartella di pagine Markdown in un sito web statico; include una wiki d'esempio sulla programmazione Python. README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 69 file.
 
 ## Tech Stack
 - Linguaggi: Python (4), JavaScript (1)

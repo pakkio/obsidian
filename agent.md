@@ -6,7 +6,7 @@
 [[AI Agents]] [[LLM]] [[Python]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 7 file._
+Prima versione dell'agente wiki poi diventato [[llmwiki]]: loop con tool calling su API compatibile OpenAI (DeepSeek) e tool su pagine Markdown (read, write, list, search, delete, append). README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 7 file.
 
 ## Tech Stack
 - Linguaggi: Python (2)

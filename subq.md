@@ -6,7 +6,7 @@
 [[Python]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 9 file._
+Script Python per provare l'API SubQ `systemone` (`subq-snap-preview`) e confrontarla con Jev sul triage infermieristico: 20 righe etichettate, test hard e contesto lungo (fino a 150.000 parole). Su `results.json` entrambi 20/20; mediana 478 ms (SubQ) contro 279 ms (Jev). README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 9 file.
 
 ## Tech Stack
 - Linguaggi: Python (6)

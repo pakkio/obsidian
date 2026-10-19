@@ -6,7 +6,7 @@
 [[OCR]] [[Python]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 71 file._
+Cartella di prova per conversione PDF: `make_italian_pdf.py` genera un articolo italiano di test con fpdf2; `output*/` contengono l'esito della conversione (Markdown + metadati). README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 71 file.
 
 ## Tech Stack
 - Linguaggi: Python (2)

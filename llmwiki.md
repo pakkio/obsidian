@@ -6,7 +6,7 @@
 [[JavaScript]] [[LLM]] [[Python]] [[TypeScript]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 101 file._
+Base di conoscenza personale in stile Karpathy: un agente scompone i documenti in pagine Markdown collegate da `[[WikiLink]]` e risponde solo da quelle. CLI (`ingest`, `query`, `index`, `show`, `log`, `graph`), backend FastAPI e frontend Vite. README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 101 file.
 
 ## Tech Stack
 - Linguaggi: Python (8), JavaScript (4), TypeScript (1)

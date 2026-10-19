@@ -6,7 +6,7 @@
 [[C++]] [[CLI]] [[Python]]
 
 ## Panoramica
-_Nessun README presente. Progetto con 23 file._
+Matrici a spirale gigantesche calcolate senza memorizzarle: valore di ogni cella in O(1) dal livello, in Python, Numba, C e CUDA. Articolo in inglese e italiano (`article.tex`, `article.it.tex`). README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 23 file.
 
 ## Tech Stack
 - Linguaggi: Python (4), LaTeX (2), CUDA (1)
