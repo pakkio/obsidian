@@ -85,16 +85,16 @@ Moved to [[CraftStorm Bridge - MCP Server]]: opt-in `POST /mcp` (`MCP_TOKEN`), p
 
 ## 7. Tests (`web/tests/`)
 
-- Python (stdlib unittest): `cd web && python -m unittest discover -s tests -p 'test_*.py'` -> **144 tests** (run 2026-10-18 on Windows: 1 failure + 1 error, both POSIX-only - `test_decode_pool.FetchLockTest` needs `flock`, `test_hot_paths` checks selector entries; 12 skipped). Files: `test_agent_loops, test_anim, test_animesh_flag, test_asset_serving, test_csfast, test_decode_pool, test_handover_fixes, test_hot_paths, test_im_sessions, test_mcp_tools, test_mesh_vertex_decode, test_object_omega, test_region_handshake, test_sun, test_terrain_idct, test_texture_decode`.
+- Python (stdlib unittest): `cd web && python -m unittest discover -s tests -p 'test_*.py'` -> **152 tests** (2026-10-19: all pass on Linux; on Windows all pass with 13 skipped - `FetchLockTest` is skipped there because the lock is a no-op without `flock`, and `test_hot_paths` checks selector entries only on selector loops. The two failures seen on 2026-10-18 were a real Windows regression, see [[CraftStorm Bridge - Scaling, Cluster & csfast]] section 3). Files: `test_agent_loops, test_anim, test_animesh_flag, test_asset_serving, test_csfast, test_decode_pool, test_handover_fixes, test_hot_paths, test_im_sessions, test_mcp_tools, test_mesh_vertex_decode, test_object_omega, test_region_handshake, test_sun, test_terrain_idct, test_texture_decode`.
 - JS: `cd web && npm test` (= `node --test tests/*.test.mjs`) -> **118 tests, all pass**. Files: `anim_frame, anim_rest, anim_root, app_internals, browser_flows, fly_speed, gpu_timer, handover_fixes, sculpt_build, static_batch, volume_build`.
 
 ---
 
 ## 8. Dependencies, limits and known gaps
 
-- `bridge.py` imports `Pillow`, `imagecodecs`, `numpy`, `llsd`, and optionally `orjson` and `csfast`. `web/requirements.txt` declares `Pillow>=11.3.0`, `imagecodecs>=2026.8.16`, `numpy>=2.0` and optional `orjson>=3.10`; **`llsd` is imported by the mesh decoder but not listed** (tests pass here because it is installed). Optional: `pywebview` (desktop), `opj_decompress`.
+- `bridge.py` imports `Pillow`, `imagecodecs`, `numpy`, `llsd`, and optionally `orjson` and `csfast`. `web/requirements.txt` declares `Pillow>=11.3.0`, `imagecodecs>=2026.8.16`, `numpy>=2.0` `llsd>=1.2.4` and optional `orjson>=3.10` (`llsd` was imported at start-up but missing from the file until `50f88d876f`, 2026-10-19: a clean install gave a bridge that would not start). Optional: `pywebview` (desktop), `opj_decompress`.
 - Node port deps (package.json): `@cornerstonejs/codec-openjpeg`, `three 0.186.0`, `three-mesh-bvh 0.9.15`.
-- Strict-J2K failures need the OpenJPEG DLL/so (for `j2k_lenient`) or `opj_decompress`; otherwise the texture `404`s.
+- Strict-J2K failures need the OpenJPEG DLL/so (for `j2k_lenient`) or `opj_decompress`; otherwise the texture `404`s. On Linux `j2k_lenient` also finds the `libopenjp2` bundled in the `imagecodecs`/`Pillow` wheels (since `4cbfc8ca33`), which also powers the reduced-resolution decode.
 - Mesh LOD selection is binary despite four LOD blocks in the asset. Disk texture cache stores only the 512 px auto variant (graded/`webp` variants are RAM only).
 - MCP has no inventory, parcel or continuous-movement tools and only targets the most recent login.
 - `web/HANDOVER_TODO.md` is a 2026-09-08 review list (now with a 2026-10-18 section on the csfast work); at least three of its items (voice_cap blocking the reader loop, flush rescheduling, stale WebSocket callbacks) appear already addressed in code (`dispatch` voice task, `_flush_browser_updates`); treat it as history, not status.

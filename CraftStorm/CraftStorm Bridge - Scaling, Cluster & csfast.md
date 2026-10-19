@@ -13,7 +13,7 @@ aliases:
 
 ← Back to [[CraftStorm]] | Parent: [[CraftStorm Bridge - LLUDP, J2K, Mesh, Anim & MCP]] | See also [[CraftStorm Web - Performance, Budgets & Diagnostics]]
 
-> **Verified against code at HEAD `7cbfa9609b` (2026-10-18)**, commits `3fcbdf4ad9`..`7cbfa9609b`.
+> **Verified against code at HEAD `7cbfa9609b` (2026-10-18)**, commits `3fcbdf4ad9`..`7cbfa9609b`. **Updated 2026-10-19** for `50f88d876f` (Windows recv fix) and `4cbfc8ca33` (reduced J2K decode): sections 3, 5, 6.
 
 One `bridge.py` is one Python process, so every user's UDP circuit, WebSocket and decode work shared one core. Ten commits on 2026-10-17/18 attack that.
 
@@ -35,7 +35,8 @@ One `bridge.py` is one Python process, so every user's UDP circuit, WebSocket an
 - Optional CPython extension (`make build-fast` / `just build-fast`, `clean-fast`; sources `csfast.c`, `setup_fast.py`; the `.so` is git-ignored, so **build it on every deploy host**). `bridge.py` does `import csfast` and falls back to Python twins when absent, or when the C code returns `NotImplemented` on odd input.
 - Functions: `bytes_to_uuid`, `terse_parse`, `pack_transform`, `te_extract` (texture ids, face colours, face texture transforms in one pass), `volume_params`, and the visibility scans `abs_pos`, `rebuild_cells`, `drop_scan`, `release_scan`. Rounding is exact.
 - `tests/test_csfast.py` fuzzes C vs Python (damaged packets, NaN, rounding ties). Distance scans use `sqrt` of the squared sum, so the last bit can differ from `math.dist`.
-- The recv loop drains queued datagrams with non-blocking `recv` after each `sock_recv`; terse updates mutate the object dict in place.
+- The recv loop keeps one persistent `add_reader` callback and drains queued datagrams with non-blocking `recv` (`9e06567f2c`); terse updates mutate the object dict in place.
+- **Windows regression, fixed 2026-10-19 (`50f88d876f`)**: Windows' default `ProactorEventLoop` has no `add_reader`, so the recv task died at once and a natively run bridge / `desktop.py` got no sim packets (login OK, empty scene). It now falls back to `sock_recv` there. Verified end to end on Windows with the fake sim: before 9 WS messages, 0 textures, 0 meshes; after 220 / 71 / 60.
 
 ### 4 Measurements and verdicts (from `HANDOVER_TODO.md`, 200 simulated users)
 | Step | Result |
@@ -48,3 +49,20 @@ Remaining hot spots (py-spy): per-self-update `ensure_future(to_browser)`, JSON 
 
 ### 5 Load-test rig (`web/tests/loadtest/`)
 `fake_sim.py` (simulated grid), `clients.py` (simulated browsers), `run.py` (`--mode cluster --users 200 --shards 10`), `sweep.py` (settings sweep). Profile with `py-spy record -d 20 -r 100 -f raw -p <shard pid>`.
+- `run.py` reads `/proc` and `clients.py` uses `add_signal_handler`: **Linux only** (on Windows use WSL). `--bridge-dir` runs another checkout for A/B.
+
+### 6 Texture decode at the served size (2026-10-19, `4cbfc8ca33`)
+On a cold cache J2K decode was the main CPU cost. The bridge now decodes only the wavelet levels the browser gets (`opj_set_decoded_resolution_factor` via `j2k_lenient`), like the viewer's discard levels. Details in [[CraftStorm Bridge - Assets & Caches]].
+
+| Texture -> 512 | before | after |
+| :--- | ---: | ---: |
+| 1024px | 179 ms | 48 ms (3.7x) |
+| 2048px | 709 ms | 51 ms (13.8x) |
+
+| Load test, single process, cold cache | before | after |
+| :--- | :--- | :--- |
+| 1 user (3 runs) | CPU 43-56 s, tex p95 1.1-1.6 s | CPU 16-18 s, tex p95 0.16-0.30 s |
+| 50 users | CPU 177 s, tex p95 6.3 s, RTT p50 60 ms | CPU 58 s, tex p95 0.71 s, RTT p50 10 ms |
+| 150 users | RTT p50 7.6 s | RTT p50 4.7 s (same as warm cache) |
+
+Verdict: big win for loading new regions (cold cache); **no change with a warm cache**, and at 150 users one process is still bound by its event loop -> use the cluster (4 shards, 150 users, cold: RTT p50 1.4 s). Measured in WSL without csfast, so absolute numbers are pessimistic.
