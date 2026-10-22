@@ -154,7 +154,7 @@ Eight more examples, one per function family (`osJevNoul`, `osJevChoice(Ext)`, `
 
 ```lsl
 list MODELS = ["typesafe/jev-1.14", "subq-snap-preview", "perplexity/pplx-decider-flash-v1.2"];
-string Q = """{"intent":{"type":"choice","instructions":"What does the customer want?","criteria":{"refund":"asks for money back","other":"anything else"}}}""";
+string Q = "{\"intent\":{\"type\":\"choice\",\"instructions\":\"What does the customer want?\",\"criteria\":{\"refund\":\"asks for money back\",\"other\":\"anything else\"}}}";
 
 default
 {

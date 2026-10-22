@@ -24,21 +24,21 @@ Counts: the interface declares **~471 `os*` methods (406 names)**; this page lis
 
 ZEngine is the CIL script engine (default). ZEXT adds syntax on top of LSL; with `ZEXT = false` each construct below is a compile error. `zengine desugar <file>` shows the plain LSL it lowers to. Details: [[ZEXT Language Extensions]], [[ZEngine]].
 
-| Construct                                                                | What it does                                                                            | Lowered to                                                                    |
-| :----------------------------------------------------------------------- | :-------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- |
-| `boolean`, `true` / `false`                                              | boolean type and lowercase literals                                                     | `integer`, `TRUE` = 1                                                         |
-| `decimal`                                                                | decimal type                                                                            | see ZEXT note                                                                 |
-| `c ? a : b`                                                              | ternary                                                                                 | temporary + `if` / `else`                                                     |
-| `a ?? b`                                                                 | null-coalescing (blank string, null key, invalid JSON sentinel)                         | temporary + empty check                                                       |
-| `x \|> f(y)`                                                             | pipeline: left side becomes the first argument                                          | `f(x, y)`                                                                     |
-| `s[i]`, `list[i]`, `s[a:b]`                                              | indexing and inclusive range slice                                                      | `llGetSubString` / `llList2<Type>`                                            |
-| `["k" => v]`                                                             | map literal                                                                             | strided list `["k", v]`                                                       |
-| `f"hi {x}"`, `r"C:\temp"`, `"""..."""`, adjacent literals                | f-strings, raw and triple-quoted strings, concatenation                                 | escaped `+` chains                                                            |
-| `for`, `while`, `do`, `break`, `continue`, `switch` / `case` / `default` | structured control flow (fall-through kept)                                             | labels and `jump`                                                             |
-| `x op= y` for bitwise and shift ops                                      | compound assignment                                                                     | expanded                                                                      |
-| `-> var : timeout` async bind, `await { }`, named timers                 | call an `*Async` function and resume with the result                                    | `__zstate` dispatcher with synthesised `dataserver`, `http_response`, `timer` |
-| state parameters and arguments                                           | `state name(args)`                                                                      | see ZEXT note                                                                 |
-| `#include`, `#define`, `#ifdef`                                          | preprocessor; `#include` needs `[ZEngine] EnableInclude = true` and is permission-gated | text splice before compile                                                    |
+| Construct | What it does | Lowered to |
+| :--- | :--- | :--- |
+| `boolean`, `true` / `false` | boolean type and lowercase literals | `integer`, `TRUE` = 1 |
+| `decimal` | decimal type | see ZEXT note |
+| `c ? a : b` | ternary | temporary + `if` / `else` |
+| `a ?? b` | null-coalescing (blank string, null key, invalid JSON sentinel) | temporary + empty check |
+| `x \|> f(y)` | pipeline: left side becomes the first argument | `f(x, y)` |
+| `s[i]`, `list[i]`, `s[a:b]` | indexing and inclusive range slice | `llGetSubString` / `llList2<Type>` |
+| `["k" => v]` | map literal | strided list `["k", v]` |
+| `f"hi {x}"`, `r"C:\temp"`, `"""..."""`, adjacent literals | f-strings, raw and triple-quoted strings, concatenation | escaped `+` chains |
+| `for`, `while`, `do`, `break`, `continue`, `switch` / `case` / `default` | structured control flow (fall-through kept) | labels and `jump` |
+| `x op= y` for bitwise and shift ops | compound assignment | expanded |
+| `-> var : timeout` async bind, `await { }`, named timers | call an `*Async` function and resume with the result | `__zstate` dispatcher with synthesised `dataserver`, `http_response`, `timer` |
+| state parameters and arguments | `state name(args)` | see ZEXT note |
+| `#include`, `#define`, `#ifdef` | preprocessor; `#include` needs `[ZEngine] EnableInclude = true` and is permission-gated | text splice before compile |
 
 Engine features that are not syntax: typed globals and arrays, direct-typed API fast path, compiled-script cache shared by identical scripts ([[Asset Deduplication & Database]] §6), script state persistence, `llSleep` as a cooperative yield, live line tracking and dynamic breakpoints (`set_breakpoint`, below).
 

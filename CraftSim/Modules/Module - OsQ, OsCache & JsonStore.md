@@ -153,7 +153,7 @@ Files: `JsonStore/JsonStore.cs` (1013), `JsonStoreModule.cs` (635), `JsonStoreSc
 - `osJsonCreateStore(string json)` returns a store id (`NULL_KEY` on invalid JSON, over-size, or count limit). Empty string creates `{}`. Stores are region-wide by id; any script holding the id can use it. Stores created from OSSL are **not** auto-freed (the object-removal hook only destroys stores keyed by a prim UUID), so call `osJsonDestroyStore` or you will eventually hit `MaxStoreCount`.
 - **JSONL support** (`ParseJsonOrJsonLines`, `JsonStore.cs:179`; `HasContentAfterFirstValue`, `:~190`): if anything other than whitespace / `//` comments follows the first complete top-level `{...}` or `[...]`, the input is split on `\n`, blank lines skipped, each line parsed on its own and the results become a **top-level array**. A line containing two values throws (store creation fails). Single-value input keeps the legacy `OSDParser.DeserializeJson` path. Before this, `OSDParser` silently kept only the first record. (The comment block in `tasks/stress/jsonl_wrap_demo.lsl` still describes the old truncation behaviour; stale. No unit test in `OpenSim/**/*Test*.cs` mentions JSONL: unverified by test.)
 - **Path language** (`ParsePathExpression`, `JsonStore.cs:738`): `/` is normalized to `.`; components are `name` (letters, digits, `_` only), `{any name}` (braces for keys with other characters), `[N]` array index, `[+]` append (set only), or a bare run of digits which is treated as an array index (`"0/x"` == `[0].x`). Anything else (e.g. a key containing `-` or a space without braces) makes the path invalid and the call returns `""`/does nothing. An empty path addresses the root.
-- `osJsonGetValue` returns scalars unquoted (`useJson=false`), `osJsonSetValue(store, path, value)` takes `value` as **JSON text** (`module.SetValue(..., true)`), so a string value needs its own double quotes (a helper that wraps text in `llChar(34)` keeps the script free of backslashes, see the example below), while numbers/booleans go bare (`"250"`, `"true"`) (see `tasks/stress/json_demo.lsl`).
+- `osJsonGetValue` returns scalars unquoted (`useJson=false`), `osJsonSetValue(store, path, value)` takes `value` as **JSON text** (`module.SetValue(..., true)`), so strings need embedded quotes: `osJsonSetValue(s, "name", "\"Bob\"")`, numbers/booleans bare (`"250"`, `"true"`) (see `tasks/stress/json_demo.lsl`).
 - `osJsonGetNodeType` / `osJsonGetValueType` return the `JSON_NODETYPE_*` / `JSON_VALUETYPE_*` enum values (`-1` if module missing); `osJsonArrayLength(store, "")` is the root length; `osJsonList2Path(list)` joins elements with `/` (integers as numbers).
 - All mutations take a per-store `lock(map)` and recompute `StringSpace`; a mutation that would exceed `MaxStringSpace` is rejected.
 
@@ -170,44 +170,19 @@ Files: `JsonStore/JsonStore.cs` (1013), `JsonStoreModule.cs` (635), `JsonStoreSc
 
 The richer `JsonXxx` methods in `JsonStoreScriptModule.cs` (`JsonReadNotecard`, `JsonWriteNotecard`, `JsonTakeValue`, `JsonRezAtRoot`...) belong to the legacy OpenSim `json*` script module (needs its own `[JsonStore]` config) and are separate from the `osJson*` surface above.
 
-### Example (run on the live sim 2026-10-17, `tasks/zext/osjson_readable.lsl`)
+### Example (shape taken from `tasks/stress/json_demo.lsl`, JSONL part reasoned from `ParseJsonOrJsonLines`)
 ```lsl
-// osjson_readable.lsl - osJson* without escaped quotes: triple-quoted JSON, a quote helper, and JSON Lines on two lines.
-string jstr(string s)                            // a JSON string value is its text between double quotes
-{
-    string dq = llChar(34);
-    return dq + s + dq;
-}
+key cfg = osJsonCreateStore("{}");
+osJsonSetValue(cfg, "region", "\"pakkio\"");
+osJsonSetValue(cfg, "maxAgents", "250");
+string maxAg = osJsonGetValue(cfg, "maxAgents");           // 250
 
-default
-{
-    state_entry()
-    {
-        key cfg = osJsonCreateStore("""{"name": "lamp", "tags": ["a"]}""");
-        osJsonSetValue(cfg, "region", jstr("pakkio"));        // a string needs its quotes; numbers and booleans do not
-        osJsonSetValue(cfg, "level", "3");
-        osJsonSetValue(cfg, "on", "true");
-        llOwnerSay("name " + osJsonGetValue(cfg, "name") + ", region " + osJsonGetValue(cfg, "region")
-                   + ", level " + osJsonGetValue(cfg, "level") + ", on " + osJsonGetValue(cfg, "on")
-                   + ", first tag " + osJsonGetValue(cfg, "tags.0"));
-
-        // JSON Lines: one object per line, loaded as an array
-        key rows = osJsonCreateStore("""{"id":1,"tags":["a"]}
-{"id":2,"tags":["b"]}""");
-        llOwnerSay("rows: " + (string)osJsonArrayLength(rows, "") + ", second id " + osJsonGetValue(rows, "1.id")
-                   + ", its tag " + osJsonGetValue(rows, "1.tags.0"));
-    }
-}
+key rows = osJsonCreateStore("{\"id\":1,\"tags\":[\"a\"]}\n{\"id\":2,\"tags\":[\"b\"]}");
+integer n = osJsonArrayLength(rows, "");                   // 2 (JSONL -> array)
+string t  = osJsonGetValue(rows, "[0].tags[0]");           // a
+osJsonSetValue(rows, "1.id", "20");
+osJsonDestroyStore(cfg); osJsonDestroyStore(rows);
 ```
-
-**Output**
-
-```text
-name lamp, region pakkio, level 3, on , first tag a
-rows: 2, second id 2, its tag b
-```
-
-Notes from the run: the JSON Lines text sits in a triple-quoted string over two lines and loads as a top-level array of two rows; paths such as `1.tags.0` address array elements; and `osJsonGetValue(cfg, "on")` for a stored `true` came back empty, so do not rely on reading booleans back as text.
 Other demos: `tasks/stress/json_extract_stress.lsl`, `jsonstore_nested_array_demo.lsl`, `json_incr.lsl`.
 
 ---

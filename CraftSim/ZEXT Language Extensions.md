@@ -9,9 +9,6 @@ tags:
 
 # ZEXT Language Extensions
 
-> [!TIP] Worked examples
-> Runnable scripts with their real output, the lowered LSL and the traps found: [[ZEXT Sugar and Async - Worked Examples]]; one example per construct: [[ZEXT Constructs - One Example Each]] (value syntax, `switch` / `foreach`, the `->` bind, `await { }` in parallel, named timers).
-
 ← Back to [[CraftSim]] | Related: [[ZEngine]], [[OSSL Extensions (AI, ML, OsDb, OsQ)]], [[MCP Server & Live Diagnostics]], [[End-to-End Multi-Module LSL Architectures]]
 
 > [!NOTE] Verified against code (commit `9fea6a0332`, 2026-10-16)
@@ -48,8 +45,6 @@ Covered by `OpenSim/Region/ScriptEngine/Shared/Tests/ZEngineZextTest.cs` (boolea
 
 ### Always available (not gated by ZEXT)
 `switch/case/default`, `break`, `continue` (contextual keywords, `ZLSLParser.cs:~1687`), `foreach (type x in list)` (`KW_FOREACH`/`KW_IN` are real keywords in `ZLSLTokenizer.cs:18,88`, so `foreach`/`in` cannot be identifiers), list destructuring `[a, b] = expr;` (`IsListDestructuring`, `:302`), closure syntax `(type p) => …` / `() => …` (`ParseClosure`, `:1139,1148`; semantics **(unverified)**), the async-bind arrow `f() -> x`, `await { … }`, and `timer -> N: { … }` / `timer "name" -> N: { … }` (`:269-273`). Use `zengine desugar` (section 4) to lower all of these to stock LSL where possible.
-
-> [!NOTE] case is only a keyword inside a script that has a switch`n> Since commit 181fb0ae86 (2026-10-17) the tokenizer turns every case into a plain identifier when the script contains no switch (ZLSLTokenizer.cs, end of the tokenize loop), so stock LSL such as `list case;` compiles. The same commit adds the stock constants PAY_HIDE (-1) and PAY_DEFAULT (-2) (ZCILCodeGen.cs:465-466); regression script: `tasks/stock_identifiers.lsl`.
 
 ---
 
