@@ -9,6 +9,12 @@ tags:
 
 # ZEXT Language Extensions
 
+> [!TIP] 2026-10 syntax pass
+> Braceless `#indent` blocks, `j"…"` JSON literals, `<< ID` heredocs, `def`/`on`/`let`/`defer`/`assert`/`print`/`in`, default and named arguments, list comprehensions, chained comparison, number literals, and a rewritten `zengine desugar`: start at [[ZEXT Syntax Sugar Index]]. Section 4 below is the older summary of the desugarer; [[ZEXT Desugar - Stock LSL Output]] supersedes it.
+
+> [!TIP] Worked examples
+> Runnable scripts with their real output, the lowered LSL and the traps found: [[ZEXT Sugar and Async - Worked Examples]]; one example per construct: [[ZEXT Constructs - One Example Each]] (value syntax, `switch` / `foreach`, the `->` bind, `await { }` in parallel, named timers).
+
 ← Back to [[CraftSim]] | Related: [[ZEngine]], [[OSSL Extensions (AI, ML, OsDb, OsQ)]], [[MCP Server & Live Diagnostics]], [[End-to-End Multi-Module LSL Architectures]]
 
 > [!NOTE] Verified against code (commit `9fea6a0332`, 2026-10-16)
@@ -45,6 +51,8 @@ Covered by `OpenSim/Region/ScriptEngine/Shared/Tests/ZEngineZextTest.cs` (boolea
 
 ### Always available (not gated by ZEXT)
 `switch/case/default`, `break`, `continue` (contextual keywords, `ZLSLParser.cs:~1687`), `foreach (type x in list)` (`KW_FOREACH`/`KW_IN` are real keywords in `ZLSLTokenizer.cs:18,88`, so `foreach`/`in` cannot be identifiers), list destructuring `[a, b] = expr;` (`IsListDestructuring`, `:302`), closure syntax `(type p) => …` / `() => …` (`ParseClosure`, `:1139,1148`; semantics **(unverified)**), the async-bind arrow `f() -> x`, `await { … }`, and `timer -> N: { … }` / `timer "name" -> N: { … }` (`:269-273`). Use `zengine desugar` (section 4) to lower all of these to stock LSL where possible.
+
+> [!NOTE] case is only a keyword inside a script that has a switch`n> Since commit 181fb0ae86 (2026-10-17) the tokenizer turns every case into a plain identifier when the script contains no switch (ZLSLTokenizer.cs, end of the tokenize loop), so stock LSL such as `list case;` compiles. The same commit adds the stock constants PAY_HIDE (-1) and PAY_DEFAULT (-2) (ZCILCodeGen.cs:465-466); regression script: `tasks/stock_identifiers.lsl`.
 
 ---
 
@@ -109,7 +117,7 @@ Output is **generated source; comments/formatting are not preserved**. The resul
 | `s[i]` / `s[a:b]` | `llGetSubString(s, i, i)` / `llGetSubString(s, a, b)`; list forms use `llList2<Type>` / `llList2List` (needs type inference first; inliner is deliberately **not** run) |
 | loops with `break`/`continue` | labels + `jump` (continue label at end of body) |
 | `switch/case/default` | jump-dispatch chain + labels in source order (preserves fall-through) |
-| `->`, `await {}`, named/inline timers | **Level-2 CPS state machine**: global `__zstate`, dispatcher + synthesized `dataserver`, `http_response`, `timer` handlers. **Only top-level statements of an event-handler body**: errors for async-bind inside a user function, a loop, or an `if`/`else` (`CheckIllegalAsyncInStmt`, `ZLSLDesugar.cs:~746-760`). Hard errors rather than approximations |
+| `->`, `await {}`, named/inline timers | **Level-2 CPS state machine**. Since 2026-10-22 there is **no placement limit**: functions containing them are inlined first; a bind directly in the handler body is split into segments (`__zstate`, synthesized `dataserver` / `http_response` / `timer` handlers); a bind inside `if` / loops / `switch` is lowered by flattening the handler into a generated `__zrunN(integer __zpc)` dispatch function. Named timers keep a due time per name and one polling `timer()`. Still refused: recursion through a suspending function. Details: [[ZEXT Arrows - Async Bind, Fat Arrow and Timers]], [[ZEXT Desugar - Stock LSL Output]] |
 
 `desugarcheck` runs original and lowered scripts through the same throwaway-prim harness as `zengine run` and diffs say/shout/whisper output after masking UUIDs, ISO-8601 timestamps and timing figures. Test corpus: `tasks/desugar_suite/` (`break_continue_nested_loops.lsl`, `foreach_ternary.lsl`, `fstrings_python_strings.lsl`, `index_expr.lsl`, `level2_asyncbind_http.lsl`, `level2_asyncbind_timeout.lsl`, `level2_named_timer.lsl`, `string_list_slicing.lsl`, …) and `ZDesugarTest` (behavioural-equivalence assertions). CLAUDE.md reports 57 corpus files desugar and recompile with `ZEXT=false` and `ZDesugarTest` has 18 tests; I did not re-run them **(unverified)**.
 
@@ -124,6 +132,6 @@ Because the whole `os*` API is engine-agnostic (YEngine binds it by reflection),
 - The "always-available" list was incomplete: list destructuring `[a,b] = …` and closure syntax exist; `foreach`/`in` are hard keywords.
 - Debug channel formula in the old note (`-1000000 - ItemID.GetHashCode() % 900000`) omitted the `(uint)` cast used in code (`ZEngineInstance.cs:1199`); button list now exact (`HELP` was missing).
 - `#TRON`/`#TROFF`/`#STEP`/`#STOP` take no arguments (explicit error), and **any** `#` line is rejected with ZEXT off (not only `#define`/`#include`).
-- Desugarer: CPS lowering also rejects async-bind inside `if`/`else` (previous note said loops/functions/if all rejected — consistent — but the exact error sources were not cited); `??`, f-strings, maps and `foreach` never reach the desugarer as distinct nodes.
+- *(Superseded 2026-10-22: nested async is now lowered, see section 4.)* Desugarer: CPS lowering also rejected async-bind inside `if`/`else` (previous note said loops/functions/if all rejected — consistent — but the exact error sources were not cited); `??`, f-strings, maps and `foreach` never reach the desugarer as distinct nodes.
 - "Null-coalescing → empty check (blank string, NULL_KEY, or sentinel)" confirmed and made precise (pre-cast operand, `JSON_INVALID` sentinel).
 - Tuple destructuring example `osDbFindVectorNearestAsync(...)` was invalid: no such function exists (only `osDbFindVectorNearest`, `…Scores`, `…ByJson`, all synchronous). Use a real async function such as `osDbFindAsync` / `osMLpredictAsync` with `-> (a, b)`.
