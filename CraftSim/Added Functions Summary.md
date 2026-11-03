@@ -99,16 +99,16 @@ Engine features that are not syntax: typed globals and arrays, direct-typed API 
 
 ### 2.5 JSON, cache and queues - [[Module - OsQ, OsCache & JsonStore]]
 
-| Function | What it does |
-| :--- | :--- |
-| `osJsonCreateStore`, `osJsonDestroyStore`, `osJsonStoreExists` | in-memory JSON tree stores |
-| `osJsonGetValue`, `osJsonSetValue`, `osJsonRemoveValue` | read, write, delete by path (`"a.b.0"`) |
-| `osJsonGetNodeType`, `osJsonGetValueType`, `osJsonArrayLength`, `osJsonList2Path` | inspect a node; build a path from a list |
-| `osCacheSet`, `osCacheGet`, `osCacheHas`, `osCacheDelete`, `osCacheClear`, `...Async` | scoped key-value cache with a TTL |
-| `osQueueCreate`, `osQueueDelete`, `osQueueList`, `osQueueStats`, `osQueuePurge` | message queues: lifecycle and statistics |
-| `osQueuePublish`, `osQueueSubscribe`, `osQueueUnsubscribe` | topic pub/sub |
-| `osQueueConsume`, `osQueuePeek`, `osQueueAck` | pull the next message, look at it, acknowledge it |
-| `osQueueSetMaxConcurrency`, `osQueueGetMaxConcurrency`, `osQueueGetInFlightCount`, `osQueueGetCursor` | per-subscription backpressure and position |
+| Function                                                                                              | What it does                                      |
+| :---------------------------------------------------------------------------------------------------- | :------------------------------------------------ |
+| `osJsonCreateStore`, `osJsonDestroyStore`, `osJsonStoreExists`                                        | in-memory JSON tree stores                        |
+| `osJsonGetValue`, `osJsonSetValue`, `osJsonRemoveValue`                                               | read, write, delete by path (`"a.b.0"`)           |
+| `osJsonGetNodeType`, `osJsonGetValueType`, `osJsonArrayLength`, `osJsonList2Path`                     | inspect a node; build a path from a list          |
+| `osCacheSet`, `osCacheGet`, `osCacheHas`, `osCacheDelete`, `osCacheClear`, `...Async`                 | scoped key-value cache with a TTL                 |
+| `osQueueCreate`, `osQueueDelete`, `osQueueList`, `osQueueStats`, `osQueuePurge`                       | message queues: lifecycle and statistics          |
+| `osQueuePublish`, `osQueueSubscribe`, `osQueueUnsubscribe`                                            | topic pub/sub                                     |
+| `osQueueConsume`, `osQueuePeek`, `osQueueAck`                                                         | pull the next message, look at it, acknowledge it |
+| `osQueueSetMaxConcurrency`, `osQueueGetMaxConcurrency`, `osQueueGetInFlightCount`, `osQueueGetCursor` | per-subscription backpressure and position        |
 
 ### 2.6 Web, text and documents - [[Module - osOcr, osPlot, osHTTP, osLex & osYacc]]
 
@@ -142,24 +142,25 @@ Engine features that are not syntax: typed globals and arrays, direct-typed API 
 
 ## 3. Console commands (new)
 
-| Command | What it does |
-| :--- | :--- |
-| `assets dedup stats [type]`, `assets inspect <id>`, `assets backfill`, `assets sweep` | asset deduplication: report, inspect, migrate legacy rows, reclaim orphan blobs |
-| `check_ais`, `use_ais`, `dont_use_ais`, `trace_ais_on`, `trace_ais_off` | AISv3 inventory capability: state, runtime enable / disable for new logins, request tracing |
-| `db tables / describe / count / query / exec / info` | SQL console on the grid database (read-only `query`, mutating `exec`) |
-| `osdb list / info / count / rows / find / insert / update / delete / attach / detach / drop / export / import` | work on osDb stores from the console |
+| Command                                                                                                                           | What it does                                                                                                                                      |
+| :-------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `assets dedup stats [type]`, `assets inspect <id>`, `assets backfill`, `assets sweep`                                             | asset deduplication: report, inspect, migrate legacy rows, reclaim orphan blobs                                                                   |
+| `features list`, `features enable <name>`, `features disable <name>` | runtime switches (`asset-dedup`, `display-names`, `ssb`, `guest-login`), not written back to the ini; see [[Runtime Feature Switches]] |
+| `check_ais`, `use_ais`, `dont_use_ais`, `trace_ais_on`, `trace_ais_off`                                                           | AISv3 inventory capability: state, runtime enable / disable for new logins, request tracing                                                       |
+| `db tables / describe / count / query / exec / info`                                                                              | SQL console on the grid database (read-only `query`, mutating `exec`)                                                                             |
+| `osdb list / info / count / rows / find / insert / update / delete / attach / detach / drop / export / import`                    | work on osDb stores from the console                                                                                                              |
 | `zengine run <file> [--touch] [--say ch msg] [--copies n] [--wait ms]`, `zengine vars`, `zengine include show`, `zengine desugar` | compile and run an LSL file against a throwaway prim; global variables and memory of running scripts; resolved `#include` chain; show lowered LSL |
-| `reset script`, `reset object scripts id/name` | reset one script or every script in an object |
-| `set script source`, `set notecard content`, `show notecard content`, `set object desc` | edit object inventory and description from the console |
-| `pathfinding enable / disable / status / rebuild / rebuild-radius / clear / test-character`, `region reset` | pathfinding control per region; factory reset |
-| `experience create / list / show / delete / state / associate / disassociate / grant / revoke` | experiences without the viewer |
-| `ssb app / bake / cof / http / test` | exercise the server-side-baking shim without a viewer |
-| `jev choose <query>`, `jev status` | pick the best MCP tool with a decision model; key, model and catalog status |
-| `log browse`, `log history` | recent log entries by level; recent console commands |
-| `show script vars` | same as `zengine vars` |
-| `dialog <prim>`, `touch <prim> [bot]` | pCampBot: touch a prim, or send a short chat dialogue |
+| `reset script`, `reset object scripts id/name`                                                                                    | reset one script or every script in an object                                                                                                     |
+| `set script source`, `set notecard content`, `show notecard content`, `set object desc`                                           | edit object inventory and description from the console                                                                                            |
+| `pathfinding enable / disable / status / rebuild / rebuild-radius / clear / test-character`, `region reset`                       | pathfinding control per region; factory reset                                                                                                     |
+| `experience create / list / show / delete / state / associate / disassociate / grant / revoke`                                    | experiences without the viewer                                                                                                                    |
+| `ssb app / bake / cof / http / test`                                                                                              | exercise the server-side-baking shim without a viewer                                                                                             |
+| `jev choose <query>`, `jev status`                                                                                                | pick the best MCP tool with a decision model; key, model and catalog status                                                                       |
+| `log browse`, `log history`                                                                                                       | recent log entries by level; recent console commands                                                                                              |
+| `show script vars`                                                                                                                | same as `zengine vars`                                                                                                                            |
+| `dialog <prim>`, `touch <prim> [bot]`                                                                                             | pCampBot: touch a prim, or send a short chat dialogue                                                                                             |
 
-## 4. MCP tools (76)
+## 4. MCP tools (78)
 
 Server: [[MCP Server & Live Diagnostics]]. Anything not listed here can be done through `run_console_command`.
 
@@ -174,6 +175,7 @@ Server: [[MCP Server & Live Diagnostics]]. Anything not listed here can be done 
 | osDb | `osdb_list`, `osdb_info`, `osdb_count`, `osdb_rows`, `osdb_find`, `osdb_insert`, `osdb_update`, `osdb_delete`, `osdb_attach`, `osdb_detach`, `osdb_export`, `osdb_import` | the `osdb` console commands as tools |
 | Assets | `asset_dedup_stats`, `inspect_asset`, `assets_backfill`, `assets_sweep` | dedup report, inspection, legacy migration, orphan sweep (`confirm=true`) |
 | Inventory API | `check_ais`, `use_ais`, `dont_use_ais`, `trace_ais_on`, `trace_ais_off` | AISv3 control |
+| Feature switches | `feature_list`, `feature_set` | runtime on/off for `asset-dedup`, `display-names`, `ssb`, `guest-login`; see [[Runtime Feature Switches]] |
 | Pathfinding | `pathfinding_status`, `pathfinding_rebuild` | navmesh state and rebuild |
 | Decisions | `choose_best_tool` | pick the best tool for a query with a decision model (keyword fallback without a key) |
 
@@ -190,7 +192,7 @@ Server: [[MCP Server & Live Diagnostics]]. Anything not listed here can be done 
 | AISv3 | `InventoryAPIv3` / `LibraryAPIv3` capability; thumbnails and favourites metadata | `Cap_InventoryAPIv3` |
 | Server-side baking shim | `UpdateAvatarAppearance` capability | `EnableServerSideBakingShim` |
 | Asset deduplication, fallback, diagnostics | content-addressed assets, secondary servers, `/assetdiag` on Robust | [[Asset Deduplication & Database]] |
-| MCP server | the 76 tools above, EdDSA-JWT or static-token login, SSH tunnel bridge | `[Mcp] Enabled` |
+| MCP server | the 78 tools above, EdDSA / RS256 JWT or static-token login, SSH tunnel bridge | `[Mcp] Enabled` |
 | WebRTC voice | `os-webrtc-janus` addon and the internal module (wolfvoice backend) | `[WebRtcVoice]` |
 | UsersLog, OpenSimSearch | login logging with country lookup; search | `[UsersLog]`, `[Search]` |
 | Secrets | `${Secrets\|Name}` in any ini, from `bin/Secrets.ini` | any config that uses it |

@@ -37,7 +37,7 @@ Routes (`McpEndpointConfigurator.cs` `MapEndpoint`): `/mcp-craftsim` (WS upgrade
 | `Enabled` | `false` | tracked `bin/OpenSim.ini:1624` sets `true` |
 | `Port` | `80` | tracked ini: `80` (CLAUDE.md says the live host uses 9200) |
 | `Token` | empty | static bearer; tracked ini: `"${Secrets|McpToken}"` |
-| `AuthorizedKeysFile` | `"mcp_authorized_keys"` (full-path'd relative to cwd) | `ssh-ed25519` lines only |
+| `AuthorizedKeysFile` | `"mcp_authorized_keys"` (full-path'd relative to cwd) | `ssh-ed25519` and `ssh-rsa` (2048+ bits) lines |
 | `JwtMaxLifetimeMinutes` | `1440` (min 1) | max `exp - iat` |
 | `ListenAddress` | **empty = all interfaces** (`0.0.0.0`) | `localhost` -> `ListenLocalhost`; any other value parsed as `IPAddress`; `*`/`0.0.0.0` = any. Not set in tracked ini |
 
@@ -48,7 +48,7 @@ If `Token` is empty **and** no valid keys are loaded, a random 32-byte token is 
 ## 2. Authentication (`McpEndpointConfigurator.IsAuthorized`, ~line 298)
 
 - Token taken from `Authorization: Bearer <t>` **or** the `?token=` query parameter (so tokens can leak into URLs/logs).
-- If it looks like a JWT (`McpJwtAuthenticator.LooksLikeJwt`) it is validated as EdDSA; failure is logged `[MCP CRAFTSIM]: JWT refused from <ip>: <reason>` and rejected. Otherwise it is compared with the static token using `CryptographicOperations.FixedTimeEquals` (length-checked first).
+- If it looks like a JWT (`McpJwtAuthenticator.LooksLikeJwt`) it is validated as EdDSA (ed25519 keys) or RS256 (`ssh-rsa` keys of 2048+ bits, since 2026-10-23; the algorithm is tied to the key type); failure is logged `[MCP CRAFTSIM]: JWT refused from <ip>: <reason>` and rejected. Otherwise it is compared with the static token using `CryptographicOperations.FixedTimeEquals` (length-checked first).
 - **Rejection returns HTTP 403** (not 401) on every route.
 - `McpJwtAuthenticator`: `Audience = "mcp-craftsim"` (line 46), `Leeway = 60 s` (49), `alg` must be `EdDSA`, signature must be 64 bytes and verify with BouncyCastle `Ed25519.Verify` over `header.payload`; optional `kid` must equal the key fingerprint **`"SHA256:" + standard Base64 (padding stripped) of SHA256(ssh blob)`** (same string `ssh-keygen -lf` prints; it is *not* Base64Url); `exp + leeway` not passed, `iat` not in the future, `nbf` honoured, `exp - iat <= JwtMaxLifetimeMinutes`, `aud` string or array containing `mcp-craftsim`. The key file is re-read when its `LastWriteTimeUtc` changes, so revoking = deleting the line. Only `ssh-ed25519` entries are used. Six tests in `tests/OpenSim.Tests/McpJwtAuthenticatorTests.cs`.
 - Traffic is still plain HTTP/WS: a captured JWT or token can be replayed until expiry (CLAUDE.md says so; use the SSH tunnel below).
@@ -58,15 +58,19 @@ If `Token` is empty **and** no valid keys are loaded, a random 32-byte token is 
 - Token precedence: `MCP_SSH_KEY` (mint JWTs) -> `MCP_TOKEN`/`CRAFTSIM_MCP_TOKEN` -> `Secrets.ini` key `MCP_SECRET` (default `McpToken`) searched in `$CRAFTSIM_SECRETS`, `../bin/Secrets.ini`, `~/.craftsim/Secrets.ini`. No token -> it exits with a message instead of guessing.
 - JWT minting: `node scripts/mcp-craftsim-bridge.js --jwt [-k <key>] [-m <minutes, default 70>] [--sub <name>]`; the live bridge uses `MCP_JWT_MINUTES` (default 70) and re-mints when less than 300 s remain (`bearer()`, line ~243). Key default `~/.ssh/id_ed25519`. Passphrase-protected keys are signed by `ssh-agent` (`SSH_AGENTC_SIGN_REQUEST = 13`, via `SSH_AUTH_SOCK`); no npm dependencies.
 - SSH tunnel: `MCP_SSH_TARGET` (e.g. `<user>@<host>`) + `MCP_SSH_PORT` (e.g. <ssh-port>) -> spawns `ssh -N -L 127.0.0.1:<free>:<MCP_URL host>:<port>` with `BatchMode=yes`, `ExitOnForwardFailure=yes`, `StrictHostKeyChecking=accept-new`, `ServerAliveInterval=30`, `ServerAliveCountMax=3` (lines 294-297); `MCP_URL` is then the address *as seen from the server*. The bridge exits if the tunnel drops; the MCP client restarts it. `MCP_SSH_KEY` doubles as `ssh -i`.
+- Tunnel login key: `MCP_SSH_IDENTITY` sets the ssh key for the tunnel separately from `MCP_SSH_KEY` (the key the JWT is minted with). The bridge signs RS256 with `ssh-rsa` keys too, asking ssh-agent for `rsa-sha2-256`, never SHA-1.
+- Shell: `scripts/mcp-call.sh tool[:'{json args}'] ...` calls tools through the bridge; settings in `.env.mcp` (not committed), `MCP_WAIT` seconds to wait (default 8).
+- Clients in the viewer and web bridge: see [[CraftStorm Native C++ Viewer (Firestorm Fork)]] section 7.
 - Repo client configs: `.mcp.json` (stdio -> bridge, `MCP_URL=http://127.0.0.1:9200/mcp-craftsim`), `mcp_config.json` (old paths under `/root/craftsim`, `http://<grid-host>:80/mcp-craftsim`), `opencode.json`. No tokens are stored in them (since 2026-10-10).
 
 ---
 
-## 3. Tool catalog (76 tools, by source class; line = `[McpServerTool]` line)
+## 3. Tool catalog (78 tools, by source class; line = `[McpServerTool]` line)
 
 | Class (`Tools/`) | Count | Tools |
 |---|---|---|
 | `ConsoleTools.cs` | 15 | `run_console_command`(53), `server_version`, `list_console_commands`, `show_uptime`, `show_server_info`, `show_threads`, `show_estates`, `login_status`, `login_enable`, `login_disable`, `force_gc`(101), `console_tail`(113), `asset_dedup_stats`(163), `inspect_asset`(193), `get_craftsim_skill`(253) |
+| `FeatureTools.cs` | 2 | `feature_list`, `feature_set(name, enabled)` - see [[Runtime Feature Switches]] |
 | `AdminTools.cs` | 6 | `assets_sweep`(60, needs `confirm=true`), `assets_backfill`(72), `zengine_run`(78), `db_backup`(105), `create_object`(145), `delete_object`(183, needs `confirm=true`) |
 | `DbTools.cs` | 18 | SQL: `db_info`(67), `db_tables`, `db_describe`, `db_count`, `db_query`, `db_exec`(114); OsDb: `osdb_list`(130), `osdb_info`, `osdb_rows`, `osdb_find`, `osdb_count`, `osdb_insert`, `osdb_update`, `osdb_delete`, `osdb_export`, `osdb_import`, `osdb_attach`, `osdb_detach`(376) |
 | `ScriptDebugTools.cs` | 7 | `set_breakpoint`(89), `remove_breakpoint`, `is_script_paused`, `get_script_globals`, `get_script_locals`, `resume_script`, `current_script_line` |
@@ -87,7 +91,7 @@ Behaviours worth knowing:
 - **`zengine_run`** wraps `zengine run <file> [--touch] [--say ch "msg"] --wait <0-60000> --copies <1-500>`; path must contain no spaces/quotes. Headless test of a script on a throwaway prim; see [[ZEngine]].
 - **`db_backup`** runs `sh bin/backup-db.sh` (MySQL only) and returns `exit=<n>` + output; killed after 10 min.
 - **`get_craftsim_skill`** returns `.agents/skills/craftsim-mcp/SKILL.md` searched under cwd, parent, and `AppDomain.BaseDirectory` (that file is not in this repo checkout: **unverified present on the host**).
-- **`choose_best_tool(query, category)`**: `JevTools.Catalog` has 69 entries (of the 76 tools). Uses `DecisionClient` (`OpenSim/Framework/DecisionClient.cs:62`, `DefaultModel = "perplexity/pplx-decider-v1.2"` via OpenRouter; `subq-snap-preview` also works, see [[Module - osAI & osJev]] §6.4); overrides `OPENROUTER_API_KEY`, `OPENROUTER_DECISION_MODEL`; no key -> keyword heuristic fallback (logged). Console: `jev choose <query>`, `jev status`.
+- **`choose_best_tool(query, category)`**: `JevTools.Catalog` has 69 entries (of the 78 tools). Uses `DecisionClient` (`OpenSim/Framework/DecisionClient.cs:62`, `DefaultModel = "perplexity/pplx-decider-v1.2"` via OpenRouter; `subq-snap-preview` also works, see [[Module - osAI & osJev]] §6.4); overrides `OPENROUTER_API_KEY`, `OPENROUTER_DECISION_MODEL`; no key -> keyword heuristic fallback (logged). Console: `jev choose <query>`, `jev status`.
 
 ---
 

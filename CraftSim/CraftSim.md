@@ -37,7 +37,8 @@ CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a scr
   - **[[Module - OsQ, OsCache & JsonStore]]**: message queues, TTL cache, JSON tree stores.
   - **[[Module - osOcr, osPlot, osHTTP, osLex & osYacc]]**: OCR, charts, HTTP client, lexer and parser.
   - **[[Module - Pathfinding, Experience, Materials & Avatar Utilities]]**: navmesh, experiences, materials, avatar helpers.
-  - **[[Avatar, NPC & Region Modules]]**: NPCs, avatars, regions.
+  - **[[Avatar, NPC & Region Modules]]**: NPCs, avatars, regions, display names.
+  - **[[Module - Guest User Pool]]**: shared "Guest User" login that hands out `Guest UserN` accounts, randomised look, daily tail cleanup, runtime switch.
   - **[[Module - Server-Side Baking (SSB)]]**: the `UpdateAvatarAppearance` capability and server-side compositor, with the SL-viewer alignment table.
   - **[[Module - AISv3 Inventory API]]**: the `InventoryAPIv3` / `LibraryAPIv3` REST inventory capabilities, with the SL-viewer alignment table.
   - **[[Module - Navmesh & Pathfinding]]**: DotRecast navmesh, `llCreateCharacter` family, rebuild and incremental build, off-by-default trap.
@@ -47,7 +48,9 @@ CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a scr
 ## 3. Operations
 
 - **[[Build, Configuration & Self-Hosting]]**: building, configuration, running a grid.
-- **[[MCP Server & Live Diagnostics]]**: the MCP server, its 76 tools, authentication, the stdio bridge and SSH tunnel.
+- **[[Configuration Reference (ini files)]]**: which ini file wins, and every section and key the fork adds, with defaults (including the guest pool keys).
+- **[[Runtime Feature Switches]]**: `[Features]`, the `features` console command and `feature_list`/`feature_set`, changeable without a restart.
+- **[[MCP Server & Live Diagnostics]]**: the MCP server, its 78 tools, authentication, the stdio bridge and SSH tunnel.
 - **[[Asset Deduplication & Database]]**: content-addressed assets, object templates, the compiled-script cache, fallback servers.
 - **[[SQLite in CraftSim]]**: SQLite as the default store, the System.Data.SQLite port, per-service files, WAL, traps.
 - **[[Decision Models Benchmark]]**: eight decision models compared on 30 labelled tickets (accuracy, speed, cost).
@@ -57,6 +60,7 @@ CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a scr
 ## 3b. Upstream comparison
 
 - **[[Upstream OpenSim vs CraftSim - Divergence]]**: what upstream OpenSim does not do (SSB, AIS, display-name changes, navmesh) and what CraftSim added.
+- **[[CraftSim vs Wolf Territories - Divergence]]**: side-by-side with the Wolf Territories grid (WolfStorm / WolfViewer): its 134 `wolf*` functions, game layer, Region Monitoring API and WolfVoice, against ZEngine, the `os*` extensions and the MCP server.
 
 ## 4. What is wrong or unproven
 

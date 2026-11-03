@@ -108,6 +108,15 @@ Parsed by `parseChatCommand`; anything unmatched is sent verbatim as public chat
 
 ---
 
+## 5. Touch controls, PWA manifest and SimulatorFeatures (commit `0c3f1eecfc`, 2026-11-03)
+
+> Read from the commit message and diff stat; not run on a device in this pass.
+
+- **`web/input/touch_controls.js`**: on-screen thumb-stick, look pad and jump / fly / descend buttons. They drive the same `setMoveKey` / `setFlying` as the keyboard. Shown only on a coarse pointer (or `?touchui=1`) and while logged in; every key is released when the controls are hidden.
+- **`index.html`**: viewport meta added (phones rendered at about 980 px before), `manifest.webmanifest`, theme-color, apple-touch-icon and web-app meta tags. The bridge serves `.webmanifest` as `application/manifest+json`. A PWA (Progressive Web App) is a site the browser can install and run in its own window; here there is **no service worker**, so it launches full-screen but is not offline-capable. Icons in `web/icons/` are placeholders.
+- **SimulatorFeatures**: `bridge.py` requests the `SimulatorFeatures` capability, fetches the region's map and forwards it to the browser as a `sim_features` message (LLSD converted to capped plain JSON); a failure is logged and never affects the session. `app.js` keeps it in `window.simFeatures`; nothing consumes it yet.
+- Tests: `web/tests/touch_controls.test.mjs`, `web/tests/test_sim_features.py`.
+
 ## Corrections vs previous doc
 - **Slash commands**: `/help /pos /who /sit /stand /s /w /me /<channel>` are not implemented; real set is `/tp /goto /t /r /regions /im /click /tphint /near /att /attachments /flex /hide`.
 - **Editor**: no Three.js `TransformControls` gizmo; numeric fields only. No in-world **LSL script editor** in the web UI (scripts are read-only; only notecards save).

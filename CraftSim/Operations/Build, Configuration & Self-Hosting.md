@@ -9,7 +9,7 @@ tags:
 
 # Build, Configuration & Self-Hosting
 
-← Back to [[CraftSim]] | Related: [[Asset Deduplication & Database]], [[MCP Server & Live Diagnostics]], [[Performance & Benchmarks]], [[Voice (WebRTC, Janus & SynthVoice)]]
+← Back to [[CraftSim]] | Key reference: [[Configuration Reference (ini files)]] | Related: [[Asset Deduplication & Database]], [[MCP Server & Live Diagnostics]], [[Performance & Benchmarks]], [[Voice (WebRTC, Janus & SynthVoice)]]
 
 Practical reference for building, testing, configuring and operating CraftSim (`C:\Users\pakkio\w\craftsim`).
 

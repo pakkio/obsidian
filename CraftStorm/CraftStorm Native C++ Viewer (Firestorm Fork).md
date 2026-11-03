@@ -107,6 +107,21 @@ Replaces painting scripted/touchable faces red (the beacon path) with a thin blu
 
 ---
 
+## 7. Admin console (floater) - craftsim MCP client
+
+> Added after the verification pass above (commits `632a95505e`, `14376d254a`, `263cfae2cf`, `6ae3fb0c14`, Oct 23-25); read from commit messages and `.env.example`, not re-run.
+
+`indra/newview/fsfloaterconsole.cpp` is a floater that gives admins the sim's server console and a cheap-LLM chat driving the other MCP tools of the grid ([[MCP Server & Live Diagnostics]]). The web bridge has the same client in `web/admin_console.py`; both read the same `.env`.
+
+- **Tunnel**: the sim MCP listens on `127.0.0.1` only, so the console runs `ssh -L` to the grid host (sshd port `FSConsoleSshPort`, default 55134; user `FSConsoleSshUser`, default root) and talks to `http://127.0.0.1:<port>/mcp-craftsim`. An explicit URL or tunnel command wins.
+- **Two keys**: `CRAFTSIM_SSH_KEY` logs in to the tunnel; `CRAFTSIM_MCP_KEY` signs the JWT (its `.pub` must be in the sim's `mcp_authorized_keys`). Bare name = `~/.ssh/<name>`; a `wsl:` prefix mints inside WSL. JWT minting uses the craftsim `mcp-craftsim-bridge.js --jwt` (on Windows via `CreateProcess`).
+- **Settings**: `.env` next to the checkout (or `CRAFTSTORM_ENV_FILE`): `CRAFTSIM_MCP_PORT` (9200), `CRAFTSIM_SSH_PORT`, `CRAFTSIM_SSH_USER`, `CRAFTSIM_SSH_KEY`, `CRAFTSIM_MCP_KEY`, `CRAFTSIM_MCP_BRIDGE_JS`, plus `OPENCODEGO_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` (default `glm-5.3-flash`). Viewer settings: `FSConsoleMcpPort`, `FSConsoleMcpKey`, `FSConsoleMcpUrl`, `FSConsoleMcpToken`, `FSConsoleJwtCommand`, `FSConsoleTunnelCommand`, `FSConsoleLlmUrl`, `FSConsoleLlmModel`.
+- **Commands**: `/show` prints the effective settings as markdown (the assistant gets the same report); `/port`, `/key`. Console commands are not filtered client-side.
+- **Output**: answers stream token by token through `curl` and render as markdown (headings, bold, italic, code, links, bullets, quotes, tables); up to 20 tool rounds per question; "(answered in N s)" after each answer.
+- Full write-up in the repo: `doc/admin_console.md`.
+
+---
+
 ## Known gaps and caveats
 - Nothing built or run in this pass; the local build tree is pre-rebrand (section 1).
 - `build_target.sh` assumes `build-vc150-64`; repo has `build-vc170-64`.
