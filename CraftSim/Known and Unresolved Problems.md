@@ -52,7 +52,7 @@ Legend: **Open** = still a problem. **Workaround** = open, with a switch or a kn
 | Dedup | SQLite writes have no explicit transaction and no identical-write skip; MySQL `replace INTO` resets `create_time` / `access_time` on every non-skipped rewrite; a missing blob reads back as an empty array, not an error; Hypergrid-proxied foreign assets are not counted; `FSAsset` / `XAsset` stores are not deduplicated | **Open** (by design, but easy to trip over) | same, §1, §5 |
 | Dedup | No console command or MCP tool reports the ZEngine compile cache (size, hits, refcounts) | **Open** | same, §6 |
 | Inventory | NPC scaling with rich inventories and attachment cloning is unbenchmarked (needs a viewer-captured appearance). The optional tier-2/3 async migrations (scene inventory ops, `LocalInventoryServiceConnector`, `HGInventoryBroker`, `InventoryTransferModule`) are available but not done | **Open** (optional) | `README.md` "Known Follow-ups" |
-| Repo | `CLAUDE.md` and `README.md` differ between the `craftsim` and `CraftSim2026` trees and were never reconciled; Robust / PostgreSQL changes that were expected from production do not exist on this machine | **Open** | integration doc §0.4, §11.4 |
+| Repo | `CLAUDE.md` and `README.md` differ between the `craftsim` and `CraftSim2026` trees and were never reconciled; PostgreSQL changes that were expected from production do not exist on this machine. (The Robust part is resolved: on 2026-11-06 the tracked config, CLAUDE.md and README describe the Robust grid setup that production runs; the live `Robust.HG.ini` stays untracked.) | **Open** | integration doc §0.4, §11.4 |
 
 ### 1.2 Unverified claims in the docs
 
@@ -60,8 +60,8 @@ Legend: **Open** = still a problem. **Workaround** = open, with a switch or a kn
 - **"383 `IOSSL_Api` methods / 17 families"** and **"over 100 new"**: stale; the interface now has ~471 declarations (406 distinct names), and "new vs upstream" cannot be checked without diffing against upstream.
 - **"0 errors, 0 warnings", 477/479 tests**: recorded results from 2026-10-01, not re-run in the Obsidian passes.
 - **Positional audio via wolfvoice** and the `SLData` rationale: not provable from this repo's C#; the voice server is another repo.
-- **`CLAUDE.md` says version 1.0.4**; the code is `1.1.0` (`VersionInfo.cs`).
-- **Production host layout** (`<grid-host>:<grid-port>`, regions `PKC` + `pakkio2`): from `CLAUDE.md` only.
+- ~~`CLAUDE.md` says version 1.0.4~~: corrected to `1.1.0` on 2026-11-06.
+- **Production host layout**: verified on the server on 2026-11-06 (Robust on 9203 / 9103, regions `PKC` + `pakkio2` registered); the MCP port 9200 and the voice and database settings remain host-local.
 
 ### 1.3 Closed (looked open)
 

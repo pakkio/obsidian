@@ -68,7 +68,7 @@ CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a scr
 
 ## 5. Quick reference
 
-Re-read from the repo on 2026-10-17 (`craftsim` at `512c3f319b`); `origin/master` was checked again on 2026-10-18 and is one commit further (`181fb0ae86`, ZEngine tokenizer/constants fix, see [[ZEXT Language Extensions]]), with no other change to the documented surface.
+Re-read from the repo on 2026-10-17 (`craftsim` at `512c3f319b`); `origin/master` was checked again on 2026-10-18 and is one commit further (`181fb0ae86`, ZEngine tokenizer/constants fix, see [[ZEXT Language Extensions]]), with no other change to the documented surface. The branch was renamed to **`main`** on 2026-11-06 and the table below was brought up to `05973390ac` (Robust grid configuration, ports, regions); see [[Build, Configuration & Self-Hosting]] section 4.
 
 | Item | Value |
 | :--- | :--- |
@@ -76,7 +76,8 @@ Re-read from the repo on 2026-10-17 (`craftsim` at `512c3f319b`); `origin/master
 | Runtime | .NET 10 (`<TargetFramework>net10.0</TargetFramework>`); `global.json` pins SDK `10.0.100` with `rollForward: latestFeature` |
 | Default script engine | `DefaultScriptEngine = "ZEngine"` (`bin/OpenSim.ini`) |
 | ZEXT | `[ZEngine] ZEXT` defaults to `true`; `#include` needs `[ZEngine] EnableInclude = true` |
-| Regions in the tracked `Regions.ini` | `Nexus` (1024x1024, UDP 9000) and `pakkio2` (256x256, UDP 9001) |
+| Architecture | Grid with Hypergrid (`GridHypergrid.ini`): Robust first (gatekeeper 9203, private 9103), then `OpenSim.dll` (HTTP 9000) |
+| Regions in the tracked `Regions.ini` | `PKC` (1024x1024, UDP 9200) and `pakkio2` (256x256, UDP 9201) |
 | Build and test | `./runprebuild.sh` on a fresh clone, then `./compile.sh`, `./test.sh` or `./check.sh`; test projects in `tests/OpenSim.Tests` and `tests/CraftSim.SmokeTests` |
 | Recorded test result | 477/479 + 2/2 on 2026-10-01 (one load-sensitive test), **not re-run** in the documentation passes; the `DecisionClient*` tests (36) passed on 2026-10-17 |
 | Repo docs | `README.md` (changelog and the Extensions Reference), `CLAUDE.md` (orientation), `CRAFTSIM.md`, `BUILDING.md`, `SELF_HOSTING.md`, `JANUS-SETUP.md`, `TEST-PLAN-VOICE.md`, `zengine_whitepaper.tex` |

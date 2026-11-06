@@ -23,7 +23,7 @@ aliases:
 | `bin/OpenSimDefaults.ini` | Every default. The header of `OpenSim.ini` says "DO NOT MODIFY OpenSimDefaults.ini, as your changes would be lost" on upgrade. | yes |
 | `bin/OpenSim.ini` | The region simulator's overrides. A key here replaces the same key in the defaults. | `bin/*.ini` is gitignored, so a fresh clone has only the `.example` templates (see `SELF_HOSTING.md`) |
 | `bin/config-include/*.ini` | Pulled in by `[Architecture] Include-Architecture` (`Standalone.ini`, `StandaloneHypergrid.ini`, `Grid.ini`, `GridHypergrid.ini`) and by `Include-osslDefaultEnable`. Each carries its own `[AssetService]`, `[LoginService]` and so on. | the shipped ones, yes; `*Common.ini` are the editable copies |
-| `bin/Robust.ini` (from `Robust.ini.example`, `Robust.HG.ini.example`) | The grid services process: login, assets, inventory, user accounts. Reads **its own** `[Features]` and `[LoginService]` | example only |
+| `bin/Robust.HG.ini` (from `Robust.HG.ini.example`; `Robust.ini` from `Robust.ini.example` for a grid without Hypergrid) | The grid services process: login, assets, inventory, user accounts, the Hypergrid gatekeeper. Reads **its own** `[Features]` and `[LoginService]`. **Required** here: the tracked `OpenSim.ini` selects `GridHypergrid.ini` since 2026-11-06 | example only (the live file is gitignored) |
 | `bin/Secrets.ini` (from `Secrets.ini.example`) | Referenced as `${Secrets|Name}` from any ini. Holds `McpToken`, `JanusApiSecret`, DB password. See [[Build, Configuration & Self-Hosting]] section 3 | no |
 
 Rules of thumb:

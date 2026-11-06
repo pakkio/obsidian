@@ -107,7 +107,7 @@ Engine features that are not syntax: typed globals and arrays, direct-typed API 
 | `osCacheSet`, `osCacheGet`, `osCacheHas`, `osCacheDelete`, `osCacheClear`, `...Async`                 | scoped key-value cache with a TTL                 |
 | `osQueueCreate`, `osQueueDelete`, `osQueueList`, `osQueueStats`, `osQueuePurge`                       | message queues: lifecycle and statistics          |
 | `osQueuePublish`, `osQueueSubscribe`, `osQueueUnsubscribe`                                            | topic pub/sub                                     |
-| `osQueueConsume`, `osQueuePeek`, `osQueueAck`                                                         | pull the next message, look at it, acknowledge it |
+| `osQueueConsume`, `osQueueConsumeAsync`, `osQueuePeek`, `osQueueAck`                                  | pull the next message (the async form delivers it as a `dataserver` payload and works with `->`), look at it, acknowledge it |
 | `osQueueSetMaxConcurrency`, `osQueueGetMaxConcurrency`, `osQueueGetInFlightCount`, `osQueueGetCursor` | per-subscription backpressure and position        |
 
 ### 2.6 Web, text and documents - [[Module - osOcr, osPlot, osHTTP, osLex & osYacc]]

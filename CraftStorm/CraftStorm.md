@@ -19,7 +19,7 @@ aliases:
 
 > **Updated 2026-10-18 (HEAD `7cbfa9609b`).** Web viewer and native notes were verified at commit `bba1a8b8f6` (2026-10-16); since then only `web/` bridge code changed (sharding, C extension, asset cache - see [[CraftStorm Bridge - Scaling, Cluster & csfast]]). `app.js` is untouched (12,778 lines, same build id). Working checkout is now `C:\Users\claudio.pacchiega\w\craftstorm`.
 >
-> Originally verified (`bba1a8b8f6`, 2026-10-16). Repo `git@github.com:pakkio/craftstorm.git` (remote `origin`), local `C:\Users\pakkio\w\craftstorm`, branch `main` (remote also has `origin/master`). Hub notes below were each re-checked against source; this page only summarises and links.
+> Originally verified (`bba1a8b8f6`, 2026-10-16). Repo `git@github.com:pakkio/craftstorm.git` (remote `origin`), local `C:\Users\pakkio\w\craftstorm`, branch `main` (the only branch on `origin` besides a few feature and dependabot branches; there is no `origin/master`). Hub notes below were each re-checked against source; this page only summarises and links.
 
 **CraftStorm** is pakkio's two-track viewer for OpenSim / [[CraftSim]] / Second Life grids:
 
@@ -34,6 +34,7 @@ aliases:
 - **[[CraftStorm Web - Architecture, Rendering & Batching]]** - three.js pipeline in `web/app.js` (12,778 lines), SL Z-up to three.js Y-up conversion, instancing and static batching (`web/assets/static_batch.js`, region-sized `BATCH_CELL_SIZE = 256`, `THREE.BatchedMesh` via `WEBGL_multi_draw`), prim sweeps (`volume_build.js`), sculpts (`sculpt_build.js`), `MeshBVH` (`bvh.js`, `bvh_worker.js`), cutout alpha.
 - **[[CraftStorm Web - Performance, Budgets & Diagnostics]]** - frame budgets (`MSG_BUDGET_MS = 6`, `CULL_BUDGET_MS = 3`, `app.js:7319,7379`), `WEAK_GPU` detection (`:109`), load shedding (`shedLevel`, `autoReduceLoad` `:11385-11399`), GPU timer (`assets/gpu_timer.js`), `P` probe, `F9` benchmark (`assets/benchmark.js`), `Diag` JSON.
 - **[[CraftStorm Web - Avatars, Animesh, Movement & Audio]]** - avatar skeleton data (`web/avatar_data/skeleton.json`: 160 joints), bakes-on-mesh, animesh and keyframe animation (`assets/anim_clip.js`, `anim_state.js`, `anim_frame.js`, `anim_rest.js`, `anim_root.js`), `collision.js`, `assets/fly_speed.js`, spatial voice (`voice/voice_client.js` talking to [[Voice (WebRTC, Janus & SynthVoice)|wolfvoice]]), `assets/world_audio.js`.
+- **[[CraftStorm Web - Interactions, Media & Diagnostics]]** - **new 2026-11-06:** full-screen media and texture viewing, script dialogs (`llDialog`, `llTextBox`, permissions, `llLoadURL`), avatar lighting, walking smoothness, the `craftJitter` / `craftBodies` console tools, bridge restart procedure, open problems.
 - **[[CraftStorm Web - Controls, UI, Build Tools & Shortcuts]]** - real key map, the 10 implemented slash commands (plus aliases), window manager, inventory (Rez/Wear/View, notecard save), numeric object editor. Note it has **no 3D gizmo and no LSL editing**.
 
 ### 2. Bridge and MCP

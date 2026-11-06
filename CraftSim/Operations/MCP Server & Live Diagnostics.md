@@ -65,7 +65,7 @@ If `Token` is empty **and** no valid keys are loaded, a random 32-byte token is 
 
 ---
 
-## 3. Tool catalog (78 tools, by source class; line = `[McpServerTool]` line)
+## 3. Tool catalog (91 tools as of 2026-11-06, by source class; line numbers are from the 78-tool reading of 2026-10-17)
 
 | Class (`Tools/`) | Count | Tools |
 |---|---|---|
@@ -75,11 +75,13 @@ If `Token` is empty **and** no valid keys are loaded, a random 32-byte token is 
 | `DbTools.cs` | 18 | SQL: `db_info`(67), `db_tables`, `db_describe`, `db_count`, `db_query`, `db_exec`(114); OsDb: `osdb_list`(130), `osdb_info`, `osdb_rows`, `osdb_find`, `osdb_count`, `osdb_insert`, `osdb_update`, `osdb_delete`, `osdb_export`, `osdb_import`, `osdb_attach`, `osdb_detach`(376) |
 | `ScriptDebugTools.cs` | 7 | `set_breakpoint`(89), `remove_breakpoint`, `is_script_paused`, `get_script_globals`, `get_script_locals`, `resume_script`, `current_script_line` |
 | `AisTools.cs` | 5 | `check_ais`(51), `use_ais`, `dont_use_ais`, `trace_ais_on`, `trace_ais_off` |
-| `ObjectTools.cs` | 5 | `list_objects`(48), `get_object_details`, `update_inventory_item_asset`, `set_notecard_content`, `get_notecard_content` |
+| `ObjectTools.cs` | 7 | `list_objects`(48), `get_object_details`, `update_inventory_item_asset`, `set_notecard_content`, `get_notecard_content`, `object_size` (bytes of every distinct asset an object uses, by type), `largest_objects` (rank by prim count, or by asset bytes for the top `candidates`) |
+| `OscacheTools.cs` | 5 | `oscache_list`, `oscache_get`, `oscache_set` (optional TTL), `oscache_delete`, `oscache_clear` - see [[Module - OsQ, OsCache & JsonStore]] |
+| `OsqTools.cs` | 4 | `osq_list_queues`, `osq_queue_info`, `osq_publish`, `osq_purge` - see [[Module - OsQ, OsCache & JsonStore]] |
 | `NpcTools.cs` | 4 | `create_npc`(48), `npc_move_to`, `delete_npc`, `npc_list_with_state` |
 | `RegionTools.cs` | 4 | `list_regions`(52), `region_status`, `region_broadcast`, `region_restart` |
 | `UserTools.cs` | 4 | `get_display_name`(51), `set_display_name`, `list_users`, `inventory_stats` |
-| `ScriptEngineTools.cs` | 3 | `script_engine_status`(49), `reset_script`, `reset_object_scripts` |
+| `ScriptEngineTools.cs` | 5 | `script_engine_status`(49), `reset_script`, `reset_object_scripts`, `compile_script` (dry-run compile of LSL/ZEXT, PASS with metrics or errors with line and column), `desugar_script` (ZEXT lowered to stock LSL) |
 | `AvatarTools.cs` | 2 | `list_avatars`(47), `teleport_avatar` |
 | `PathfindingTools.cs` | 2 | `pathfinding_rebuild`(45), `pathfinding_status` |
 | `JevTools.cs` | 1 | `choose_best_tool`(167) |
@@ -91,7 +93,7 @@ Behaviours worth knowing:
 - **`zengine_run`** wraps `zengine run <file> [--touch] [--say ch "msg"] --wait <0-60000> --copies <1-500>`; path must contain no spaces/quotes. Headless test of a script on a throwaway prim; see [[ZEngine]].
 - **`db_backup`** runs `sh bin/backup-db.sh` (MySQL only) and returns `exit=<n>` + output; killed after 10 min.
 - **`get_craftsim_skill`** returns `.agents/skills/craftsim-mcp/SKILL.md` searched under cwd, parent, and `AppDomain.BaseDirectory` (that file is not in this repo checkout: **unverified present on the host**).
-- **`choose_best_tool(query, category)`**: `JevTools.Catalog` has 69 entries (of the 78 tools). Uses `DecisionClient` (`OpenSim/Framework/DecisionClient.cs:62`, `DefaultModel = "perplexity/pplx-decider-v1.2"` via OpenRouter; `subq-snap-preview` also works, see [[Module - osAI & osJev]] §6.4); overrides `OPENROUTER_API_KEY`, `OPENROUTER_DECISION_MODEL`; no key -> keyword heuristic fallback (logged). Console: `jev choose <query>`, `jev status`.
+- **`choose_best_tool(query, category)`**: `JevTools.Catalog` had 69 entries when there were 78 tools (not re-counted for the 91). Uses `DecisionClient` (`OpenSim/Framework/DecisionClient.cs:62`, `DefaultModel = "perplexity/pplx-decider-v1.2"` via OpenRouter; `subq-snap-preview` also works, see [[Module - osAI & osJev]] §6.4); overrides `OPENROUTER_API_KEY`, `OPENROUTER_DECISION_MODEL`; no key -> keyword heuristic fallback (logged). Console: `jev choose <query>`, `jev status`.
 
 ---
 

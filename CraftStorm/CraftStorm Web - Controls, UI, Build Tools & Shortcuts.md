@@ -30,7 +30,7 @@ Letter keys use `e.code` (physical key). All of the below are ignored while a te
 | `A` `D` / `ArrowLeft` `ArrowRight` | **Turn** (not strafe) | `TURN_RATE = PI/2` (90 deg/s, `:9624`) with a start ramp `YAW_NUDGE_RATE = 0.05` over `NUDGE_TIME = 0.25 s` |
 | Left+Right mouse together | Forward | `mouseForward = left && right` (`:12138`) |
 | Right mouse alone | Backward | `mouseBackward = right && !left` |
-| Hold forward/back `> RUN_HOLD_MS = 300` or hold `Shift` (on the ground) | Run | Sends `CTRL_FAST_AT 0x400`; `RUN_MULTIPLIER = 5/3`, walk `MOVE_SPEED = 2.4576` m/s -> run `4.096` m/s (matches the sim's `AgentControlNormalVel`) |
+| Hold `Shift` (on the ground) or **double-tap `W`** (`tapRun`, window `DOUBLE_TAP_RUN_MS`) | Run | Holding a direction alone **walks** (changed 2026-11-05 to match the desktop viewer; before, holding for `RUN_HOLD_MS = 300` ms ran). Sends `CTRL_FAST_AT 0x400`; `RUN_MULTIPLIER = 5/3`, walk `MOVE_SPEED = 2.4576` m/s -> run `4.096` m/s (matches the sim's `AgentControlNormalVel`) |
 | `Space` | Jump (ground) / ascend (flying) | Sends `CTRL_UP_POS 0x10`; held `Space` re-jumps on landing (`jumpRequested`) |
 | `PageUp` / `Numpad9` | Fly + ascend | `setFlying(true)` if grounded, `CTRL_UP_POS` |
 | `PageDown` / `Numpad3`; `Shift` while flying | Descend | `CTRL_UP_NEG 0x20` (`:12139-12165`); flying vertical speed from `flySpeed.vertical` |

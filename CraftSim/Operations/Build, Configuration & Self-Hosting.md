@@ -97,28 +97,28 @@ Template `bin/Secrets.ini.example`; the real file is gitignored, keep mode `0600
 ## 4. Deployment topologies
 
 ### What the tracked `bin/OpenSim.ini` actually says
-- `[Architecture] Include-Architecture = "config-include/StandaloneHypergrid.ini"` (line 1527); alternatives are listed commented.
-- `[Const] BaseHostname = "<grid-host>"` (57), `PublicPort = "9000"` (71). `StandaloneCommon.ini:43,57` set `GatekeeperURI` / `HomeURI = "${Const|BaseURL}:${Const|PublicPort}"` (so `http://<grid-host>:9000` as committed).
+- `[Architecture] Include-Architecture = "config-include/GridHypergrid.ini"`: grid mode with Hypergrid, so **Robust must run first** (committed on 2026-11-06, `05973390ac`; before that the file said `StandaloneHypergrid.ini`, which is still in the tree and is the way back to a single process). Alternatives are listed commented.
+- `[Const] BaseHostname = "<grid-host>"`, `PublicPort = "9203"` (Robust's gatekeeper and login), `PrivatePort = "9103"` (private grid services; keep it closed at the firewall). `[Network] http_listener_port = 9000` is the region simulator's HTTP port. The live `Robust.HG.ini` and `GridCommon.ini` set `GatekeeperURI` / `HomeURI = "${Const|BaseURL}:${Const|PublicPort}"` (so `http://<grid-host>:9203`); they are gitignored, with `.example` templates tracked.
 - `DefaultScriptEngine = "ZEngine"` (284); `[ZEngine] Enabled = true`, `NumWorkers = 4`, `MaxEventSliceSeconds = 30`, `MaxWorkerQuantumMilliseconds = 5`, `ZEXT = true` (1040-1080); `[YEngine] Enabled = false` (1096). `OpenSimDefaults.ini` leaves `DefaultScriptEngine` commented (application fallback is `YEngine`, per `BUILDING.md`).
 - Physics default in `OpenSimDefaults.ini`: `physics = ubODE` (302), `meshing = ubODEMeshmerizer` (274). BulletSim is selectable (see [[Performance & Benchmarks]]).
 - DB: MySQL, `Data Source=localhost;Database=opensim;User ID=opensim;...Old Guids=true;SslMode=None;`, `StorageProvider = "OpenSim.Data.MySQL.dll"` (1594). `BUILDING.md` says SQLite is the default for a *fresh* standalone (`StandaloneCommon.ini.example`).
 - `[Mcp] Enabled = true, Port = 80, Token = ${Secrets|McpToken}` (1623-1626); `[RemoteAdmin] enabled = true`, `access_ip_addresses = "127.0.0.1,::1"`; `[DbConsole] Enabled = true`, `AllowWrite = false` (1569-1577); `[Statistics]`/`[Monitoring]` enabled; `[NPC] MaxNumberNPCsPerScene = 150` (1459).
-- Tracked `bin/Regions/Regions.ini`: `[Nexus]` Location `1000,1000`, **1024x1024**, `InternalPort = 9000`, `ExternalHostName = <grid-host>`, `MaxAgents = 250`; `[pakkio2]` `1004,1000`, 256x256, `InternalPort = 9001`, `MaxAgents = 250`.
+- Tracked `bin/Regions/Regions.ini`: `[PKC]` Location `1000,1000`, **1024x1024**, `InternalPort = 9200` (UDP), `ExternalHostName = <grid-host>`, `MaxAgents = 250`; `[pakkio2]` `1004,1000`, 256x256, `InternalPort = 9201`, `MaxAgents = 250`. (Until the 2026-10-23 commit the first region was `Nexus` on 9000 and the second on 9001.)
 
-### The production host differs (CLAUDE.md only; **unverified from this repo**)
-Public identity `http://<grid-host>:<grid-port>`, grid nick `craft-sim`, regions on UDP 9200/9201, MCP on `9200/tcp`, `GatekeeperURIAlias`/`HomeURIAlias = s60.craft-world.org:<grid-port>`, `[Mcp] ListenAddress = 127.0.0.1`, region named `PKC`. None of <grid-port>, `PKC` or a `ListenAddress` appears in the tracked `.ini` files; those live in uncommitted host copies. CLAUDE.md also warns the DNS names carry AAAA records for an IPv6 address the simulator does not bind (IPv4 only). Changing the hostname changes the Hypergrid identity and needs a restart.
+### What the production host adds (checked on the server, 2026-11-06)
+Robust (`dotnet Robust.dll -inifile=Robust.HG.ini`, tmux session `robust`) listens on 9203 and 9103, and `OpenSim.dll` (started with `./opensim.sh`, tmux session `opensim`) on HTTP 9000 and UDP 9200/9201. `get_grid_info` answers on 9203 with grid nick `craft-sim`, and both regions are registered with Robust. `GatekeeperURIAlias`/`HomeURIAlias = s60.craft-world.org:9203` are set in `Robust.HG.ini` and `GridCommon.ini`. Still **host-local and not tracked**: `Robust.HG.ini`, `GridCommon.ini`, `Secrets.ini`, `[Mcp] Port = 9200` with `ListenAddress = 127.0.0.1` (the tracked file has `Port = 80` and no `ListenAddress`), the database name, the voice server URLs and `[VivoxVoice] enabled = false`. CLAUDE.md also warns the DNS names carry AAAA records for an IPv6 address the simulator does not bind (IPv4 only). Changing the hostname changes the Hypergrid identity and needs a restart.
 
 ### Self-hosting a split grid (`Robust.dll` + `OpenSim.dll`, see `SELF_HOSTING.md`)
 1. Copy `Robust.ini.example -> Robust.ini` (or `Robust.HG.ini.example` for HG), `OpenSim.ini.example -> OpenSim.ini`, `bin/config-include/GridCommon.ini.example -> GridCommon.ini`.
 2. In `[Architecture]` enable `config-include/Grid.ini` (or `GridHypergrid.ini`), not a Standalone include as well.
 3. **DefaultRegion**: in `Robust.ini` `[GridService]`, `Region_<YourRegionName> = "DefaultRegion"`, otherwise new accounts with no last region fail login with "destination not found".
-4. Start `dotnet Robust.dll` first (ports 8002 public / 8003 private), then `./opensim.sh` (region port 9000 by default).
+4. Start `dotnet Robust.dll` first (the examples default to ports 8002 public / 8003 private; this deployment uses 9203 / 9103 through `[Const]`), then `./opensim.sh` (region HTTP port 9000). Check with `curl http://127.0.0.1:<public-port>/get_grid_info`.
 5. Robust also resolves `${Secrets|X}`.
 
 ---
 
 ## 5. Git & upstream workflow
-- `origin = git@github.com:pakkio/craftsim.git`; `upstream = https://github.com/opensim/opensim.git` with push URL `DISABLED` (`git remote -v`). Current branch `master`.
+- `origin = git@github.com:pakkio/craftsim.git`; `upstream = https://github.com/opensim/opensim.git` with push URL `DISABLED` (`git remote -v`). The default branch is **`main`** (renamed from `master` on 2026-11-06; `master` no longer exists on GitHub). A fresh clone has only `origin`, so add `upstream` with `git remote add upstream <url>` and `git remote set-url --push upstream DISABLED`.
 - **Never `git merge upstream/master`**: the merge-base is a 2015 commit and later upstream commits exist here as rehashed duplicates, so a merge yields a conflict storm. Use it for inspection and cherry-picking only (`git log upstream/master -- <path>`, `git cherry-pick -x <sha>`).
 
 ---
@@ -126,6 +126,6 @@ Public identity `http://<grid-host>:<grid-port>`, grid nick `craft-sim`, regions
 ## Corrections vs previous doc
 - `global.json`: previous text only said "targets .NET 10"; the pin is SDK `10.0.100` with `rollForward: latestFeature`. (CLAUDE.md says `latestPatch` and "10.0.3xx will not satisfy it": that is stale vs the file.)
 - NuGet list was wrong: the PDF package is `PdfPig 0.1.16` (not `UglyToad.PdfPig`); the props file also carries DotRecast, ModelContextProtocol, AspNetCore FrameworkReference and SkiaSharp.
-- "Standalone Hypergrid at `<grid-host>:<grid-port>`", "regions `PKC`/`Nexus` UDP 9200/9201" and "MCP on 127.0.0.1:9200" are **not** the tracked config (`<grid-host>`, ports 9000/9001, MCP port 80, no `ListenAddress`, no `PKC`); they are live-host overrides known only from CLAUDE.md.
-- "0 errors, 0 warnings" is a recorded claim, not verified now. CLAUDE.md's "seven tracked project files" is now nine.
+- Resolved on 2026-11-06: the Robust grid setup, the 9203 / 9103 ports, the `craft.edu3d.it` identity and regions `PKC` / `pakkio2` on UDP 9200 / 9201 are now in the tracked config, and CLAUDE.md describes them. Still **not** tracked: MCP on `127.0.0.1:9200` (tracked: `Port = 80`, no `ListenAddress`).
+- "0 errors, 0 warnings" is a recorded claim, not verified now (the server did build `main` in Release with 0 warnings on 2026-11-06). CLAUDE.md's "seven tracked project files" and "`latestPatch`" claims were corrected on 2026-11-06 (nine files, `latestFeature`).
 - Added: `build.sh`/`test.sh`/`compile.sh` roles, CI workflow, `start-craftsim.sh`, `KEEP_DAYS=14`, secrets key list, version `1.1.0`. Duplicate "## 4" heading fixed.
