@@ -116,7 +116,7 @@ Engine features that are not syntax: typed globals and arrays, direct-typed API 
 | :--- | :--- |
 | `osHTTPGet`, `osHTTPPost`, `osHTTPRequest`, `osHTTPRequestExt` (+ `Get`/`Post` `Async`) | HTTP client with headers |
 | `osFetchClean`, `osFetchCleanAsync` | GET a page and return plain text without tags, scripts and styles |
-| `osOcr`, `osOcrAsync` | text from an image or PDF through an LLM vision model (default) or local Tesseract; scanned PDFs via their embedded images |
+| `osOcr`, `osOcrAsync` | text from an image or PDF through PaddleOCR (default since 2026-11-07, local, no fee), an LLM vision model (`"llm"`) or local Tesseract; scanned PDFs via their embedded images. Word, Excel, PowerPoint, OpenDocument, text files and notecards are read directly, with no OCR |
 | `osPlot`, `osPlotFace` | render line, bar, scatter or pie charts to a dynamic texture (all faces or one) |
 | `osLex`, `osYacc` | regex tokenizer and Earley parser from inside a script |
 | `osChunk` | split long text into chunks for RAG indexing |

@@ -21,7 +21,7 @@ aliases:
 
 ← Back to [[CraftSim]] | Related: [[OSSL Extensions (AI, ML, OsDb, OsQ)]], [[Module - osAI & osJev]], [[ZEXT Language Extensions]]
 
-Verified against code (commit `9fea6a0332`, 2026-10-16).
+Verified against code (commit `9fea6a0332`, 2026-10-16). **The `osOcr` section was updated on 2026-11-07 (commits `a1c6b7584e`, `e79bb2e6b7`, `d19618bf21`)** for the PaddleOCR engine, the new default, tiles for large pictures, and for documents read directly; the `OSSL_Api.cs` line numbers inside it were taken before that change and have moved. The other sections (osPlot, osHTTP, osLex, osYacc) are as of 2026-10-16.
 
 This note covers document/vision extraction (`osOcr`), native chart rendering (`osPlot` / `ChartRenderModule`), HTTP client and HTML cleaning (`osHTTP*` / `osFetchClean*`), regex lexing and Earley parsing (`osLex` / `osYacc`), and per-prim logging (`osLog*`).
 
@@ -46,35 +46,54 @@ All implementations live in one partial class: `OpenSim/Region/ScriptEngine/Shar
 
 ---
 
-## 1. `osOcr` - Image and PDF text extraction
+## 1. `osOcr` - Image, PDF and document text extraction
+
+> **Since 2026-11-07 the default engine is PaddleOCR (`"paddle"`), run locally; see the engine list below and [[#PaddleOCR]].** Word, Excel, PowerPoint, OpenDocument, text files and notecards are read directly, with no OCR (step 3 of the flow).
 
 ### Signatures (`IOSSL_Api.cs:899-904`)
-- `string osOcr(string source, string prompt)` - engine defaults to `"llm"`.
+- `string osOcr(string source, string prompt)` - the engine is the configured default (`[OSSL] OcrDefaultEngine`, `"paddle"` unless changed). Before 2026-11-07 it was `"llm"`.
 - `string osOcr(string source, string prompt, string engine)`
-- `LSL_Key osOcrAsync(string source, string prompt)` / `LSL_Key osOcrAsync(string source, string prompt, string engine)` - result arrives via `dataserver`.
+- `LSL_Key osOcrAsync(string source, string prompt)` / `LSL_Key osOcrAsync(string source, string prompt, string engine)` - result arrives via `dataserver`. Same default.
 
 ### Flow (`DoOcr`, `OSSL_Api.cs:10161-10216`)
 1. Empty `source` returns `ERROR: source is empty`.
 2. `source` starting with `http://` or `https://` is fetched by `FetchOcrBytesFromUrl` (`:9863`, shared `m_httpClient`, binary-safe). Anything else is treated as the name or UUID of an item in the calling prim's own task inventory (`FetchOcrBytesFromInventory`, with `SearchTaskInventoryForAnyAssetId` at `:9917` - not limited to notecards). Texture assets (JPEG2000) are decoded and re-encoded as PNG by `DecodeIfTextureAsset` (`:9971`) so both engines get a usable raster.
-3. `engine` is trimmed and lower-cased; empty means `"llm"`. Anything other than `llm` / `tesseract` returns `ERROR: unsupported engine '<x>' (use llm or tesseract)` (`OcrImage`, `:10215`).
+3. `engine` is trimmed and lower-cased (`ResolveOcrEngine`). Empty means the configured default; a default of `paddle` whose models are not installed is replaced by `"llm"` so existing scripts keep working, whereas a script that names `"paddle"` gets the error. Anything other than `paddle` / `llm` / `tesseract` returns `ERROR: unsupported engine '<x>' (use paddle, llm or tesseract)`; this is checked first, so a typo is reported whatever the source is.
+   **Documents are read before any engine is involved** (added 2026-11-06): data that is not a PDF goes to `DocumentText.Detect`, which looks at the bytes (never the name). A docx, xlsx, pptx, odt, ods or odp file gets `DocumentText.ExtractOffice`; a text file or an ordinary notecard gets `ExtractPlain`; `engine` and `prompt` are ignored. These are stored as Notecard-typed assets named with their extension (`report.pdf`), uploaded through the MCP tools `upload_document` / `upload_document_to_object`, the console command `document upload`, the `NewFileAgentInventory` capability (`inventory_type` `notecard`) or the notecard-update capability, and limited to 10 MB. Reading is bounded: 20,000 archive parts, 64 MB per part, 256 MB unpacked, no DTDs, 1,000,000 characters out. Not read: embedded images, comments, speaker notes, headers and footers, the old binary formats. See `README.md` ("Documents as assets") in the repo.
 4. PDF detection (`IsPdf`): `ExtractPdfText` (`:10061`) reads the text layer with UglyToad PdfPig (`PackageReference PdfPig 0.1.16`, `Directory.Build.props:19`) via `ContentOrderTextExtractor` and, since 2026-10-18 (`03b40ba1c5`), in **page reading order**: each page is split into blocks (`DocstrumBoundingBoxes`) that `UnsupervisedReadingOrderDetector` sorts, falling back to the stored content order if layout analysis fails (a generated invoice's address block used to come out bottom line first), **up to `MaxPdfPages = 200`** (`:10018`). If it yields nothing the result is `ERROR: PDF has no extractable text layer` (const `NoPdfTextLayerError`, `:10022`).
 5. For that no-text-layer case `ExtractPdfImages(data, MaxPdfOcrImages = 10)` (`:10028`, `:10021`) pulls embedded page images (PNG, or raw JPEG) in page order - no native PDF rasterizer is used - and each image is OCR'd separately; texts are joined with `\n`. If there are no images the error is `<no text layer error> and no embedded images to OCR`. If every image fails the first error is returned.
 6. Non-PDF data goes straight to `OcrImage`.
 
 ### Engines
+- `"paddle"` (default since 2026-11-07; `OcrViaPaddle`, class `PaddleOcr` in `PaddleOcr.cs`): see [[#PaddleOCR]] below.
 - `"llm"` (`OcrViaLlm`, `:10099`): builds an OpenRouter multimodal `messages` array (text part + `image_url` data-URL, MIME sniffed by `SniffImageMimeType`) and calls `CallOpenRouter(model, messages, 2048)` directly - deliberately not through public `osAIChat`, so the threat-level audit trail says `osOcr`. Model is hard-coded `"openai/gpt-4o-mini"` in both `osOcr` and `osOcrAsync` (`:10160`, `:10234`) - there is no config key or parameter to change it. Default prompt when empty: `"Transcribe all text in this image."`. Needs `osAISetOpenRouterAPIKey()` first (`:8889`).
 - `"tesseract"` (`OcrViaTesseract`, `:10120`): `Tesseract` NuGet 5.2.0 (`Directory.Build.props:17`), language hard-coded `"eng"`, `EngineMode.Default`, image loaded with `Pix.LoadFromMemory`. The `prompt` argument is ignored. Without `[OSSL] TesseractDataPath` it returns `ERROR: [OSSL] TesseractDataPath is not configured`.
 
 ### Configuration
 | Key | Default | Where |
 | :--- | :--- | :--- |
+| `[OSSL] OcrDefaultEngine` | `paddle` | engine for a call that names none: `paddle`, `llm` or `tesseract` (added 2026-11-07) |
+| `[OSSL] PaddleOcrModelPath` | `models/ocr` (relative to `bin/`) | directory with the PaddleOCR ONNX models; not in git (`.gitignore`: `bin/models/`) |
 | `[OSSL] TesseractDataPath` | `""` (engine unavailable) | read at `OSSL_Api.cs:245`; a comment there notes missing/mismatched data silently gives empty or garbage text |
 | `MaxOcrFetchBytes` | 25 MiB | **compile-time `const`** (`:9857`), not an ini key. Enforced on `Content-Length` and while streaming (`:9886`, `:9902`) |
 
 `bin/preflight.sh:82-85` warns if `TesseractDataPath` is set but is not a directory. A similar startup warning list exists at `OSSL_Api.cs:8884-8889` (missing path / non-directory / missing OpenRouter key).
 
+### PaddleOCR
+Added 2026-11-07 (commit `a1c6b7584e`). Code: `OpenSim/Region/ScriptEngine/Shared/Api/Implementation/PaddleOcr.cs`; glue in `OSSL_Api.cs` (`GetPaddleOcr`, `OcrViaPaddle`, `ResolveOcrEngine`). It runs PP-OCR inside the simulator on `Microsoft.ML.OnnxRuntime` (already a dependency, `Directory.Build.props`): no Python, no native OCR library, no network, no per-call fee.
+
+- **Tiles for large pictures (2026-11-07, commit `e79bb2e6b7`).** Up to 1,600 px on the long side the picture is one detector pass, as before. Larger ones are **not shrunk**: `DetectPage` cuts them into 1,280 px tiles at full resolution, 160 px overlap (`TilePositions`; the last tile is flush with the end), detects three tiles at a time (`Parallel.For`; an inference session can be run from several threads), keeps a box only in the tile whose own region (`OwnBoundaries`, the middle of each overlap) holds its centre, and `MergeAcrossTiles` unions boxes of different tiles on the same line that overlap along it (a word seen whole by one tile and cut by the next), never boxes of one tile or of lines one line apart (after the unclip, dense text has vertically overlapping boxes). The merged box is read from the full picture. Limits: 20,000 px a side and 64 megapixels in all (so a 20,000 px side needs the other under 3,200; the total bounds memory, 3 bytes a pixel decoded). The first version refused over 8,000 px a side, the second over 12,000. Why: shrinking a 1241 x 4714 receipt to 1,280 px made 5 px text, and only 48% of the PDF text layer's words were found (`Via Livo Livorno` style seam duplicates appeared in the first tiled version and are gone with the merge).
+- **Pipeline.** Image to a 24-bit BGR copy (transparent areas white, at most 20,000 px a side and 64 megapixels). For one pass the detector sees at most 1,280 px on the long side, each side a multiple of 32, BGR with the ImageNet mean/std, and returns a text-probability map. `FindBoxes` thresholds it at 0.3, takes the connected regions (8-neighbour), drops regions with a mean score under 0.5, fewer than 10 pixels or a side under 3, and grows each box by the DB "unclip" distance (`area * 1.6 / perimeter`). `GroupIntoLines` puts boxes whose vertical centres are within half a box height on one line (lines top to bottom, boxes left to right). Each box is cropped, scaled to the recognizer's input height (read from the model: 48 for PP-OCRv4; not assumed), normalised `(x/255 - 0.5)/0.5` and read; `CtcDecode` takes the best class per step, collapses repeats, drops the blank (class 0) and rejects a line whose mean confidence is under 0.3. Output classes are blank, the character list, then a space.
+- **Orientation.** With a `*cls*.onnx` model, a crop at least twice as wide as high is turned half a circle when the model gives at least 0.9 for "upside down". If more than half the lines of a page were turned, the whole page is rotated and read again, so the order of the lines is right as well as each line (`Rotate180`).
+- **Models** (in `[OSSL] PaddleOcrModelPath`): `*det*.onnx`, `*rec*.onnx`, the character list (the recognizer's `character` metadata, else a `*dict*.txt`, one character per line) and optionally `*cls*.onnx`. Live setup on `craft`: `ch_PP-OCRv4_det_infer.onnx` (4.7 MB) and `ch_ppocr_mobile_v2.0_cls_train.onnx` (0.6 MB) from `SWHL/RapidOCR` on Hugging Face, and `latin_PP-OCRv5_rec.onnx` (7.9 MB, SHA-256 `614ffc2d...ef144409`) with `latin_PP-OCRv5_dict.txt` (502 characters) from `monkt/paddleocr-onnx` (Apache-2.0). All three downloads were checked against the published SHA-256. The old Chinese/English recognizer is kept as `ch_PP-OCRv4_rec_infer.onnx.bak`.
+- **The recognizer decides the alphabet.** Measured: the Chinese/English recognizer (`ch_PP-OCRv4_rec`) has no `ù` and read `Perché è già più città` as `Perché é gia piu citta`; the PP-OCRv5 Latin one reads it exactly. For another script, install that script's recognizer and character list.
+- **Checked on the live server** (`zengine run <script> --wait 20000 --image upright <png> --image flipped <png>` and a script calling `osOcr(name, "")`): both an upright and a half-turned picture of three lines of accented Italian came back exact, in order. Only the unnamed call was used, and with no OpenRouter key and no Tesseract data path, only Paddle can have produced it. **Not tested:** photographs, skewed or noisy scans, vertical text (not rotated). The first call after a server start was never measured cold (an estimate of about a second for loading the models is a guess); `zengine run` needs `--wait` for it.
+- **Measured on a real scan, 2026-11-07.** A supermarket receipt PDF (a text-layer PDF, 595 x 2262 pt, so it is not OCR'd in `osOcr`) was rasterised with poppler `pdftoppm` at 150 / 200 / 300 dpi (1241 x 4714, 1654 x 6285, 2481 x 9427 px) and read as a plain PNG, compared with the PDF's own text layer (300 words, `pdftotext`): shrunk to 1,280 px **48%** of the words found (1.6-1.7 s); tiles **88% / 91% / 88%** (150 / 200 / 300 dpi) in about **4 s / 6.5 s / 12 s** (the 300 dpi page was refused before the tiling and the 64 MP limit; the test host also ran OpenSim). A 1000 x 330 picture of three lines takes 0.15 s, the same picture upside down 0.3 s (read twice). A picture stored as an in-world texture adds about a second for its JPEG2000 decode (it first looked as if OCR took 2.6-3.5 s). Remaining errors are ordinary OCR slips (`O` for `0` in `COOP`, `PREZZ0`, a space inside `1, 45`); the price column now stays on its item's line. Parallel tile detection helped little (4.2 s to 4.0 s).
+- **A text-layer PDF is not OCR'd.** PdfPig reads the layer in block order, so a receipt's item names come out before its prices (seen on a supermarket receipt: 2265 characters, 196 lines). Only a scanned PDF's embedded page images reach the engine (up to 10).
+- **Ops.** `bin/preflight.sh` warns when the default engine is `paddle` and the model directory lacks `*det*.onnx` or `*rec*.onnx`. The models are not in git, so a new host needs them copied (about 23 MB).
+
 ### Tests
-`OSSL_ApiOcrTest.cs` (empty source, unknown inventory source, unsupported engine, tesseract with no data path, async error via dataserver, plus live tesseract and live LLM tests) and `tests/OpenSim.Tests/OsOcrPdfTests.cs`. Note the test named `TestPdfSourceReturnsNotYetAvailable` (line 109) predates the PDF implementation; its name is stale (body not re-read).
+`OSSL_ApiOcrTest.cs` (empty source, unknown inventory source, unsupported engine, tesseract with no data path, async error via dataserver, plus live tesseract and live LLM tests; since 2026-11-06 also documents and notecards read without an engine; since 2026-11-07 `paddle` named without models, the default falling back to `llm`, and the default reading an image with the real models, which skips when they are absent) and `tests/OpenSim.Tests/OsOcrPdfTests.cs`. `PaddleOcrTests.cs` (14 tests of CTC decoding, box finding, line grouping, the character list, `Rotate180` and a missing or empty model directory, plus 4 with the real models: the Italian accents, a rendered page, an upside-down page and a blank page). 32 OCR tests passed on the server on 2026-11-07. Note the test named `TestPdfSourceReturnsNotYetAvailable` (line 109) predates the PDF implementation; its name is stale (body not re-read). `tests/OpenSim.Tests/OpenSim.Tests.csproj` gained a `System.Drawing.Common` reference for the test renderer.
 
 ### Example
 ```lsl
@@ -89,12 +108,20 @@ default
         osOcrAsync(pdfUrl, prompt, "llm") -> string extracted;   // ZEngine async-bind sugar
 
         if (llGetSubString(extracted, 0, 5) == "ERROR:")
-            osOcrAsync(pdfUrl, "", "tesseract") -> extracted;    // local fallback (prompt ignored)
+            osOcrAsync(pdfUrl, "", "paddle") -> extracted;       // local fallback (prompt ignored); "tesseract" also works if configured
 
         llOwnerSay("Extracted:\n" + extracted);
     }
 }
 ```
+
+### Sample: read the first document in an object, with timing (`tasks/doc_reader_indent.lsl`)
+Written in `#indent` style (committed 2026-11-06, timing and `say` added 2026-11-07, `e79bb2e6b7`). Drop a PDF, Word, Excel, PowerPoint, OpenDocument or text file into the object (a Notecard-typed item named with its extension) and touch it. `first_document()` lists the notecard-type items and takes the first whose extension is one of `pdf docx xlsx pptx odt ods odp txt md csv`; `osOcrAsync(doc, "") -> string text : 90.0 else:` waits for the reply (the script is suspended, the region is not) and gives up after 90 s. It says the kind of file, then `<name>: N characters, M lines, read in X ms` and the first 700 characters.
+
+- **`say(...)`** is a three-line helper, `def say(string message): llSay(0, message)`. ZEXT's built-in `print(...)` is `llOwnerSay`, which only the owner hears; `print` and `assert` stay built-in sugar only while the script defines no function of that name. A built-in `say` was suggested and not implemented.
+- **f-strings** build the messages: `say(f"{doc}: {llStringLength(text)} characters, {lines} lines, read in {ms} ms")`; any expression works inside the braces, and `\n` and `[...]` in the literal text are fine.
+- **Timing** is `llResetTime()` before the read and `(integer)(llGetTime() * 1000.0)` after (`elapsed_ms()`).
+- **Run it without a viewer:** `zengine run tasks/doc_reader_indent.lsl --touch --wait 15000 --notecard receipt.txt receipt.txt` (the file's text becomes a notecard of the throwaway prim). Seen on `craft` on 2026-11-07: `receipt.txt: 53 characters, 3 lines, read in 2 ms`. A document or text file is read directly in a few milliseconds; the script lists only notecard-type items, so it never reaches the OCR engine on a picture (a fall-back to the first texture was offered, not built). For picture timings see the PaddleOCR section above.
 
 ---
 
@@ -244,7 +271,7 @@ Code: `OSSL_Api.cs:5389-5545`; demo `tasks/oslog_demo.lsl`.
 
 ## Corrections vs previous doc
 - `MaxOcrFetchBytes` is a hard-coded const (25 MiB), not an `[OSSL]` ini setting; the OCR model (`openai/gpt-4o-mini`) is fixed in code.
-- `osOcr` also accepts in-world inventory item names / UUIDs (including textures, which are decoded), not just URLs; `prompt` is ignored by tesseract; language is fixed to `eng`.
+- `osOcr` also accepts in-world inventory item names / UUIDs (including textures, which are decoded), not just URLs; `prompt` is ignored by tesseract and by paddle (only the `llm` engine uses it); the tesseract language is fixed to `eng`; the paddle alphabet is whatever the installed recognizer covers (Latin script today). The `OSSL_Api.cs` line numbers quoted in section 1 predate the 2026-11-07 change.
 - `osPlot`: series lists contain numbers or `[x,y]` pairs only (no name strings - use `labels:`); default size is 512x384, not 512x512; `legend` defaults to true; `_` stands for spaces in title/labels; pie uses only the first series; `lossless`, `labels`, `colors` keys were undocumented. ThreatLevel is VeryLow.
 - `osHTTPGet`/`Post` also have header-less overloads; there are no async `osHTTPRequest*` variants.
 - `osLex` uses longest-match; `osYacc` does not abort on lexer ERROR tokens; the `epsilon` / `ε` keyword does not exist; line ranges `11395-11473` / `11509-11736` were approximate.

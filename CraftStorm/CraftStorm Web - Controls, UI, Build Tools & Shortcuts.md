@@ -60,6 +60,9 @@ Letter keys use `e.code` (physical key). All of the below are ignored while a te
 | `F9` | Benchmark orbit | `toggleBenchmark()` (`:12070`, `BENCH_DEFAULT_SECONDS`) |
 | `Ctrl+I` | Toggle Inventory window | `window.craftWindows.toggle('inventory')` |
 | `Ctrl+E` | Open the object editor on the hovered object | `window.craftEditor.open(selectedLocalId)` |
+| `M` (no modifier, not while typing) | Toggle the map: find a region (Hypergrid too) and teleport; `Esc` closes it | `window.craftMap.toggle()` in `app.js`, after the typing check (changed 2026-11-07 from `Ctrl+M`, which no longer does anything; `ui/map.js`) |
+
+**Login URL (changed 2026-11-07, commit `b024ede898`, deployed the same day: the `craft` checkout was pulled and the web bridge restarted on port 8088; not exercised in a browser afterwards).** The login form is pre-filled from the page URL: `?grid=<login URI>&first=&last=&region=&x=&y=&z=`; `region` selects Custom Position, and the new `start=last|home|custom` picks the start location (`start=last` ignores region and coordinates). The password is never read from the URL, deliberately. The login URI may be written without `http://` (`craft.edu3d.it:9203`): `Session.xmlrpc_login` in `bridge.py` adds it, because `urlsplit` otherwise reads the host as the scheme and the login failed with "expected string or bytes-like object, got 'NoneType'"; an empty or host-less URI is a clear `ValueError`. Tests: `web/tests/test_login_uri.py` (5). On this grid the login and gatekeeper port is 9203 (not 9202).
 
 Window blur clears every held key/button and the latches and re-sends movement state (`:10190`).
 

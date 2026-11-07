@@ -79,6 +79,7 @@ Mechanics, because they explain the corner cases: the statement is kept as a **t
 - `assert cond, "message"` (or `assert(cond, "message")` when the `)` is followed by `;`) lowers to `if (!(cond)) llOwnerSay("assertion failed at line N: message")`. **It reports and carries on**; it does not stop the script. The line number is the source line of the `assert`.
 - `print(a, b, …)` lowers to `llOwnerSay((string)a + " " + (string)b …)`; no arguments prints an empty line.
 - Both defer to a script function of the same name (`ScanUserFunctions` looks for `name(...) {` at top level), so existing scripts that define `print()` or `assert()` are unaffected.
+- **`print` is owner-only.** It is `llOwnerSay`, so a visitor who touches the object hears nothing. For public chat there is no built-in sugar; `tasks/doc_reader_indent.lsl` (2026-11-07) defines `def say(string message): llSay(0, message)` and builds its messages with f-strings, `say(f"{doc}: {n} characters")`. A built-in `say(...)` (llSay on channel 0) was discussed and not implemented; it would follow the same rule as `print`, deferring to a script function of that name. See [[Module - osOcr, osPlot, osHTTP, osLex & osYacc]].
 
 ## 6. Chained comparison
 
