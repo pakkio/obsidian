@@ -24,6 +24,7 @@ A pass over ZEngine's language surface, finished 2026-10-22: LSL you can write *
 > - Waiting for a reply or a timer? [[ZEXT Arrows - Async Bind, Fat Arrow and Timers]].
 > - Need to ship to an engine that only speaks LSL? [[ZEXT Desugar - Stock LSL Output]].
 > - Do you trust the desugarer? [[ZEXT Desugar Verification Report]] says what was tested, what was found, what is not covered.
+> - Want to see it in a script that does real work? [[ZEXT Sugar and Async - Worked Examples]] §9: `tasks/doc_reader_indent.lsl` reads the first document in an object and says how long it took, using `#indent`, `def`, f-strings and `->` with a timeout (2026-11-07).
 
 ## The notes
 
@@ -43,7 +44,7 @@ A pass over ZEngine's language surface, finished 2026-10-22: LSL you can write *
 
 | Arrow | Meaning | Note |
 | :--- | :--- | :--- |
-| `call() -> x` | suspend until this request's reply, bind it (a monadic bind in all but name) | [[ZEXT Arrows - Async Bind, Fat Arrow and Timers]] |
+| `call() -> x` | suspend until this request's reply, bind it (a monadic bind in all but name). `call() -> x : 90.0 else:` adds a timeout; a real use with timing is in the arrows note and [[ZEXT Sugar and Async - Worked Examples]] §9 | [[ZEXT Arrows - Async Bind, Fat Arrow and Timers]] |
 | `timer -> 0.5:` | inline timer handler | same |
 | `["k" => v]` | map literal (a flat list) | same |
 | `(args) => { … }` | closure, last argument of `llSetTimerEvent` / `llListen` / `llSensor` | same |
@@ -52,7 +53,7 @@ A pass over ZEngine's language surface, finished 2026-10-22: LSL you can write *
 
 ## The one-line summary of every construct
 
-`#indent` · `elif` `unless` `until` · `def f() -> t` · `on touch_start()` · `f(x, b: 2)` and `b = 2` defaults · `let x = e` · `defer s` · `assert c, "m"` · `print(a, b)` · `0 < x <= 9` · `x in list` · `[e for T v in l if c]` · `0b101 0o17 1_000` · `j'{…}'` · `<< END … END` · `->` · `=>` · `timer ->`.
+`#indent` · `elif` `unless` `until` · `def f() -> t` · `on touch_start()` · `f(x, b: 2)` and `b = 2` defaults · `let x = e` · `defer s` · `assert c, "m"` · `print(a, b)` (owner only; for public chat define `def say(...)`, see §9 of the worked examples) · `f"…{expr}…"` · `0 < x <= 9` · `x in list` · `[e for T v in l if c]` · `0b101 0o17 1_000` · `j'{…}'` · `<< END … END` · `->` · `=>` · `timer ->`.
 
 ## Where the code is
 

@@ -124,6 +124,26 @@ What it printed, identically as written and as desugared:
 5 await 11
 ```
 
+### A real use: an OCR call with a timeout and its duration (2026-11-07)
+`osOcrAsync(...)` returns a request key and answers in `dataserver`, so it binds like any other:
+
+```lsl
+llResetTime()
+osOcrAsync(doc, "") -> string text : 90.0 else:
+    say(f"Gave up waiting for {doc} after {elapsed_ms()} ms")
+    return
+integer ms = elapsed_ms()
+if llSubStringIndex(text, "ERROR:") == 0:
+    say(f"{text}  (after {ms} ms)")
+    return
+```
+
+- The timeout form `: 90.0 else:` is for a call that can take long (a scanned PDF page by page, a big picture: about 4 s for a long receipt page, 12 s for a 23-megapixel one); a document or text file answers in milliseconds.
+- **After `else:` the handler carries on** unless the block returns, so the `return` is what stops it.
+- The reply is plain text; a failure is a reply that starts `ERROR:`, tested after the bind. A timeout and an `ERROR:` are different cases and are handled separately above.
+- `llGetTime()` keeps counting while the handler is suspended, so the milliseconds measured around the bind are the real wait.
+- The whole script, with `def say`, f-strings and `#indent`, is [[ZEXT Sugar and Async - Worked Examples]] §9 (`tasks/doc_reader_indent.lsl`).
+
 ### How `zengine desugar` lowers it
 
 Stock LSL cannot suspend. When a bind sits directly in the handler body the handler is split into segments (the old "level 2" transform); when it sits **inside a loop, an `if`, a `switch` or an inlined function** the handler is **flattened into numbered blocks run by a generated dispatch function**:

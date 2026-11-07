@@ -447,3 +447,65 @@ c   -> refund
 - There is no dedicated JSON literal (something like `json { intent: { type: "choice" } }`); it would be a change to the ZEngine parser.
 
 All the other examples in the vault use these two forms. One example per ZEXT construct, 29 in all, is in [[ZEXT Constructs - One Example Each]].
+
+## 9. A real script: read a document and time it (`tasks/doc_reader_indent.lsl`)
+
+Added 2026-11-07. One script that uses most of the everyday sugar together: `#indent`, `def`, f-strings, the `->` bind with a timeout, and a plain timing pattern. Put a PDF, Word, Excel, PowerPoint, OpenDocument or text file in an object (a Notecard-typed item named with its extension, see [[Module - osOcr, osPlot, osHTTP, osLex & osYacc]]), add the script and touch the object. It says what kind of file it found, how many characters and lines it holds, **how long the read took**, and the first 700 characters. The helpers and the touch handler (the rest, `extension`, `kind_of`, `first_document` and the idle handlers, are plain indent-style code):
+
+```lsl
+#indent
+// llSay(0, message): said on the public channel, heard by everyone within 20 m.
+def say(string message):
+    llSay(0, message)
+
+// Milliseconds since llResetTime().
+integer elapsed_ms():
+    return (integer)(llGetTime() * 1000.0)
+
+default:
+    touch_start(integer count):
+        string doc = first_document()
+        if doc == "":
+            say("No document in my contents. Drop a PDF, Word, Excel, PowerPoint, OpenDocument or text file in me.")
+            return
+        say(f"Reading the {kind_of(extension(doc))} '{doc}' ...")
+
+        llResetTime()
+        osOcrAsync(doc, "") -> string text : 90.0 else:
+            say(f"Gave up waiting for {doc} after {elapsed_ms()} ms")
+            return
+        integer ms = elapsed_ms()
+
+        if llSubStringIndex(text, "ERROR:") == 0:
+            say(f"{text}  (after {ms} ms)")
+            return
+
+        integer lines = llGetListLength(llParseStringKeepNulls(text, ["\n"], []))
+        say(f"{doc}: {llStringLength(text)} characters, {lines} lines, read in {ms} ms")
+        string shown = llGetSubString(text, 0, SHOW_CHARS - 1)
+        if llStringLength(text) > SHOW_CHARS:
+            shown += f"\n[... {llStringLength(text) - SHOW_CHARS} more characters]"
+        say(shown)
+```
+
+Run on `craft` on 2026-11-07 with `zengine run tasks/doc_reader_indent.lsl --touch --wait 15000 --notecard receipt.txt receipt.txt`:
+
+```text
+Reading the text file 'receipt.txt' ...
+receipt.txt: 53 characters, 3 lines, read in 2 ms
+Fattura n. 4521
+Piu caffe gia pagato
+Totale 22,79 EUR
+```
+
+What each piece is:
+
+| Construct | Where | Note |
+| :--- | :--- | :--- |
+| `#indent` | first line | blocks by `:` and indentation, no braces or semicolons ([[ZEXT Braceless Indent Mode]]) |
+| `def say(string message):` | top | an ordinary function written with `def`. ZEXT's own `print(...)` is `llOwnerSay`, heard only by the owner; for public chat the script defines `say` as `llSay(0, ...)`. A built-in `say` was discussed, not built |
+| `f"…{expr}…"` | every message | interpolation; any expression inside the braces, converted with `(string)`: `{llStringLength(text)}`, `{ms}`, `{kind_of(extension(doc))}`. A literal `\n` and `[...]` in the text are fine |
+| `osOcrAsync(doc, "") -> string text : 90.0 else:` | touch handler | the async bind: the handler is suspended (the region is not) until that request's reply arrives, bound to `text`; after 90 s the indented `else:` block runs, and its `return` ends the handler, otherwise the script would carry on with an empty `text` ([[ZEXT Arrows - Async Bind, Fat Arrow and Timers]]) |
+| `llResetTime()` ... `llGetTime()` | around the bind | the elapsed time includes the wait, because the clock runs while the handler is suspended |
+
+Two things to know when you adapt it. An error comes back as an ordinary reply starting `ERROR:`, so it is tested for after the bind, not caught. And only notecard-type items are looked at, so the script reads documents and text files, which take a few milliseconds, and never reaches the OCR engine on a picture; the picture timings (0.14 s for a few lines, about 4 s for a long receipt page) are in the osOcr module note.

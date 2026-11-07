@@ -32,6 +32,7 @@ The older constructs (strings, operators, state parameters) predate the 2026-10 
 | `"%s owns %d (%f) 100%%" % [who, n, 2.5]` | formatting: `%s` `%d` `%i` `%f` `%%`; an unknown `%x` and a trailing `%` are kept; a missing argument prints nothing |
 | `"ab" * 3`, `3 * "ab"` | repetition; a count `<= 0` gives `""` |
 | `s[0]`, `s[-1]` | one character (negative counts from the end); also `list[i]` |
+| *(in use)* | the document-reader script builds every message with f-strings: `say(f"{doc}: {llStringLength(text)} characters, {lines} lines, read in {ms} ms")`, and `f"\n[... {llStringLength(text) - SHOW_CHARS} more characters]"` (a literal `\n` and `[...]` are fine in the text part). See [[ZEXT Sugar and Async - Worked Examples]] §9 |
 | `s[1:3]`, `s[:2]`, `s[5:]` | slice, **stop inclusive** (same as `llGetSubString` / `llList2List`); also on lists |
 
 ```lsl
