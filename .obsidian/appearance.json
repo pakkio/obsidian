@@ -1,4 +1,6 @@
 {
   "interfaceFontFamily": "Book Antiqua",
-  "textFontFamily": "Book Antiqua"
+  "textFontFamily": "Book Antiqua",
+  "showRibbon": true,
+  "theme": "obsidian"
 }
