@@ -44,6 +44,7 @@ Rules of thumb:
 | | `EnableMetricsCollection` | true | Frame breakdowns, object counts, login tracking |
 | | `EnableMetricsLogging` | true | |
 | `[Pathfinding]` | `Enabled` | **off** (the ini comment says true; wrong, see section 5) | `PathfindingModule.cs:122` reads `GetBoolean("Enabled", false)`, so set it explicitly. See [[Module - Navmesh & Pathfinding]] |
+| `[FlowingWater]` | `Enabled`, `Mesh`, `MaxDistance`, `MaxBlocks` | **off**; `Mesh` true; 7 (clamped to 1-15); 2000 | Flowing water from `Water Source` prims; craft has it on with `MaxDistance = 50`, which acts as 15, and `MaxBlocks = 10000`. See [[Module - Flowing Water]] |
 | | `CellSize` / `CellHeight` | 0.3 / 0.2 | Navmesh voxel size; raise `CellSize` on large regions |
 | | `AgentRadius` / `AgentHeight` | 0.4 / 1.8 | |
 | | `AgentMaxClimb` / `AgentMaxSlope` | 0.4 / 45 | |

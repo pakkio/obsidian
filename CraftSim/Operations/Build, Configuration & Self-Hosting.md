@@ -55,7 +55,7 @@ dotnet build OpenSim.sln       # primary build (CLAUDE.md "Build Commands")
    `check.sh` builds `OpenSim.sln` first on purpose: tests load plugin assemblies by name from `bin/`, so a test-only build leaves stale DLLs and surfaces as unrelated `NullReferenceException`s.
 4. **CI** (`.github/workflows/craftsim-net10.yml`): ubuntu-latest, `setup-dotnet 10.0.x`, `apt-get install libgdiplus`, `bash build.sh`, then both test projects in `Release`. `libgdiplus` is mandatory, otherwise the five `osPlot`/`ChartRenderModule` tests fail with `DllNotFoundException`.
 5. **SDK pin** (`global.json`): `version 10.0.100`, **`rollForward: latestFeature`**, `allowPrerelease: false`. Runtime: `bin/OpenSim.runtimeconfig.json` targets `net10.0` with `Microsoft.NETCore.App` **and** `Microsoft.AspNetCore.App` 10.0.0.
-6. **Version**: `OpenSim/Framework/VersionInfo.cs:32-33` -> `VersionNumber = AssemblyVersionNumber = "1.1.0"`.
+6. **Version**: `OpenSim/Framework/VersionInfo.cs:32-33` -> `VersionNumber = AssemblyVersionNumber = "1.2.0"` (was `1.1.0` until 2026-11-12).
 7. **Recorded results (not re-run)**: CLAUDE.md states last verified build "0 errors, 0 warnings (2026-10-01, SDK 10.0.400)" and tests 477/479 + 2/2; the one failure is `ZResetLoopTest.Test27CopiesWithoutBrakeSaturateWorkers` (load-sensitive threshold, passes in isolation). **(unverified: current pass/fail)**.
 
 ### Runtime knobs in `bin/OpenSim.runtimeconfig.json`

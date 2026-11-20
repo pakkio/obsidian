@@ -42,6 +42,7 @@ CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a scr
   - **[[Module - Server-Side Baking (SSB)]]**: the `UpdateAvatarAppearance` capability and server-side compositor, with the SL-viewer alignment table.
   - **[[Module - AISv3 Inventory API]]**: the `InventoryAPIv3` / `LibraryAPIv3` REST inventory capabilities, with the SL-viewer alignment table.
   - **[[Module - Navmesh & Pathfinding]]**: DotRecast navmesh, `llCreateCharacter` family, rebuild and incremental build, off-by-default trap.
+  - **[[Module - Flowing Water]]**: Minecraft-style water from `Water Source` prims (`[FlowingWater]`), mesh tiles or one prim per block, `water_*` MCP tools and `water purge`; `MaxDistance` is clamped to 15.
 - **[[OSSL Extension Examples - Complete Coverage]]**: runnable examples (osDb, osJev) with real output.
 - **[[End-to-End Multi-Module LSL Architectures]]**: scripts that combine several modules.
 
@@ -72,7 +73,7 @@ Re-read from the repo on 2026-10-17 (`craftsim` at `512c3f319b`); `origin/master
 
 | Item | Value |
 | :--- | :--- |
-| Version | `1.1.0` (`OpenSim/Framework/VersionInfo.cs:32-33`, flavour `Dev`) |
+| Version | `1.2.0` since 2026-11-12, `1.1.0` before (`OpenSim/Framework/VersionInfo.cs:32-33`, flavour `Dev`) |
 | Runtime | .NET 10 (`<TargetFramework>net10.0</TargetFramework>`); `global.json` pins SDK `10.0.100` with `rollForward: latestFeature` |
 | Default script engine | `DefaultScriptEngine = "ZEngine"` (`bin/OpenSim.ini`) |
 | ZEXT | `[ZEngine] ZEXT` defaults to `true`; `#include` needs `[ZEngine] EnableInclude = true` |

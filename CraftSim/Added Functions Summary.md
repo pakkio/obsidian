@@ -181,22 +181,22 @@ Server: [[MCP Server & Live Diagnostics]]. Anything not listed here can be done 
 
 ## 5. Modules, addons and services
 
-| Component | What it adds | Enabled by |
-| :--- | :--- | :--- |
-| ZEngine | CIL script engine with ZEXT | `DefaultScriptEngine = "ZEngine"` |
-| Image renderer, chart renderer | `imagedata` texture behind `osAIImage`; `chart` texture behind `osPlot` | loaded by default |
-| JsonStore, OsDb, OsCache, OsQ | the `osJson*`, `osDb*`, `osCache*`, `osQueue*` families | `[JsonStore] Enabled`, `[OsDb] Enabled`, `osslEnable.ini` |
-| Pathfinding | navmesh and DtCrowd-driven NPC movement | `[Pathfinding] Enabled` (off by default) |
-| Experience | experiences and their console | `[Experience]` |
-| Database console | `db` commands and `db_*` tools | `[DbConsole]` |
-| AISv3 | `InventoryAPIv3` / `LibraryAPIv3` capability; thumbnails and favourites metadata | `Cap_InventoryAPIv3` |
-| Server-side baking shim | `UpdateAvatarAppearance` capability | `EnableServerSideBakingShim` |
-| Asset deduplication, fallback, diagnostics | content-addressed assets, secondary servers, `/assetdiag` on Robust | [[Asset Deduplication & Database]] |
-| MCP server | the 78 tools above, EdDSA / RS256 JWT or static-token login, SSH tunnel bridge | `[Mcp] Enabled` |
-| WebRTC voice | `os-webrtc-janus` addon and the internal module (wolfvoice backend) | `[WebRtcVoice]` |
-| UsersLog, OpenSimSearch | login logging with country lookup; search | `[UsersLog]`, `[Search]` |
-| Secrets | `${Secrets\|Name}` in any ini, from `bin/Secrets.ini` | any config that uses it |
-| Native libraries | optimised ubODE and BulletSim | `bin/lib64/` |
-| Operations scripts | `preflight.sh`, `backup-db.sh`, `restore-db.sh` | `bin/` |
+| Component                                  | What it adds                                                                     | Enabled by                                                |
+| :----------------------------------------- | :------------------------------------------------------------------------------- | :-------------------------------------------------------- |
+| ZEngine                                    | CIL script engine with ZEXT                                                      | `DefaultScriptEngine = "ZEngine"`                         |
+| Image renderer, chart renderer             | `imagedata` texture behind `osAIImage`; `chart` texture behind `osPlot`          | loaded by default                                         |
+| JsonStore, OsDb, OsCache, OsQ              | the `osJson*`, `osDb*`, `osCache*`, `osQueue*` families                          | `[JsonStore] Enabled`, `[OsDb] Enabled`, `osslEnable.ini` |
+| Pathfinding                                | navmesh and DtCrowd-driven NPC movement                                          | `[Pathfinding] Enabled` (off by default)                  |
+| Experience                                 | experiences and their console                                                    | `[Experience]`                                            |
+| Database console                           | `db` commands and `db_*` tools                                                   | `[DbConsole]`                                             |
+| AISv3                                      | `InventoryAPIv3` / `LibraryAPIv3` capability; thumbnails and favourites metadata | `Cap_InventoryAPIv3`                                      |
+| Server-side baking shim                    | `UpdateAvatarAppearance` capability                                              | `EnableServerSideBakingShim`                              |
+| Asset deduplication, fallback, diagnostics | content-addressed assets, secondary servers, `/assetdiag` on Robust              | [[Asset Deduplication & Database]]                        |
+| MCP server                                 | the 78 tools above, EdDSA / RS256 JWT or static-token login, SSH tunnel bridge   | `[Mcp] Enabled`                                           |
+| WebRTC voice                               | `os-webrtc-janus` addon and the internal module (wolfvoice backend)              | `[WebRtcVoice]`                                           |
+| UsersLog, OpenSimSearch                    | login logging with country lookup; search                                        | `[UsersLog]`, `[Search]`                                  |
+| Secrets                                    | `${Secrets\|Name}` in any ini, from `bin/Secrets.ini`                            | any config that uses it                                   |
+| Native libraries                           | optimised ubODE and BulletSim                                                    | `bin/lib64/`                                              |
+| Operations scripts                         | `preflight.sh`, `backup-db.sh`, `restore-db.sh`                                  | `bin/`                                                    |
 
 Problems and unverified claims for everything above: [[Known and Unresolved Problems]].
