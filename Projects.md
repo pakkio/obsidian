@@ -16,6 +16,7 @@ Indice di tutti i progetti documentati in questo vault.
 - [[epoch]] — 
 - [[ernie]] — #LLM #Python
 - [[es]] — #Python #MCP
+- [[fastobsidian]] — #CLI #JavaScript #Python
 - [[firestormPOCJava]] — #Virtual_Worlds
 - [[FMM]] — #C++
 - [[gemini-desktop]] — #MCP #TypeScript
