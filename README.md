@@ -1,10 +1,10 @@
 # obsidian
 
-Obsidian vault documenting all projects of [github.com/pakkio](https://github.com/pakkio).
+Obsidian vault documenting all projects of [github.com/pakkio](https://github.com/pakkio) (81 repositories verified via `gh`).
 
-- `Projects.md` – map of content, one linked note per repository
-- `Concepts/` – cross-cutting topics (Python, MCP, RAG, OpenSim, ...)
-- `CraftSim/`, `CraftStorm/` – long-form documentation of the two flagship projects
-- `Legacy e Fork.md` – old repositories and third-party forks
+- `Projects.md` – map of content, one linked note per repository (with Mermaid ecosystem map)
+- `Concepts/` – cross-cutting topics (`Rust`, `Go`, `Python`, `C++`, `C Sharp`, `Scala`, `Java`, `MCP`, `LLM`, `RAG`, `OpenSim`, ...)
+- `CraftSim/`, `CraftStorm/`, `Nexus/` – long-form architecture, language, rendering and operations documentation
+- `Legacy e Fork.md` – historical repositories (2015–2019), placeholders and third-party forks
 
-Notes are written in Italian and connected with `[[wikilinks]]`. Open the folder as a vault in Obsidian.
+Notes are written primarily in Italian (with English technical deep dives in `CraftSim/` and `CraftStorm/`), connected with `[[wikilinks]]`, and enriched with offline **Mermaid** diagrams and **LaTeX** math formulas compatible with both Obsidian and [[fastobsidian]].

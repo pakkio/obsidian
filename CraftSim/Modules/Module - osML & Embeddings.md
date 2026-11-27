@@ -27,6 +27,19 @@ Verified against code (commit `9fea6a0332`, 2026-10-16). `OSSL_Api.cs` = `OpenSi
 
 ## 1. Architecture
 
+```mermaid
+flowchart LR
+  LSL["LSL Scripts"] --> ML["osML* (Plain C# Engine)<br>XGBoost · Trees · PCA · Encoding"]
+  LSL --> Emb["osMLEmbed* (4 Backends)<br>word2vec · GloVe · ONNX · OpenRouter"]
+  ML --> Reg1["m_mlModels (static ConcurrentDictionary)"]
+  Emb --> Reg2["m_embedModels (static ConcurrentDictionary)"]
+  Emb --> OsDb["[[Module - OsDb & Vector Search]]"]
+```
+
+Gradient-boosted tree ensemble prediction (additive trees $f_m$ with learning rate $\eta$) and PCA projection onto top-$k$ eigenvectors $U_k$:
+
+$$\hat{y}_i = \sum_{m=1}^{M} \eta\, f_m(\mathbf{x}_i), \qquad \mathbf{z}_i = U_k^\top (\mathbf{x}_i - \boldsymbol{\mu})$$
+
 ### 1.1 Layout of `OSSL_Api.cs` (current line numbers)
 | Piece | Lines |
 | :--- | :--- |

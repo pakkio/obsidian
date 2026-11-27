@@ -50,7 +50,7 @@ Verified against `README.md`, `CLAUDE.md`, `OpenSim/Framework/DecisionClient.cs`
 
 | Function | Notes |
 |---|---|
-| `osAIChat(model, messages, maxTokens, options)` / `...Async` | chat completion. Images: after a content string add `"image_url"` and a URL, e.g. `["user","Describe this","image_url","https://…"]`. `options` keys include `temperature`, `top_p`, `seed`, `stop`, `reasoning_effort`. |
+| `osAIChat(model, messages, maxTokens, options)` / `...Async` | chat completion. Images: after a content string add `"image_url"` and a URL, e.g. `["user","Describe this","image_url","https://…"]`. `options` keys include `temperature`, `top_p`, `seed`, `stop`, `reasoning_effort`. Also `(model, messages, maxTokens, integer reasoning[, string level])`: the 4th argument's type picks the form (list = options, integer = reasoning). Until 2026-11-20 ZEngine kept only one overload per argument count, so after the reasoning form was added the options form stopped compiling (`cannot implicitly convert List to Integer`); it now chooses by argument type. |
 | `osAIChatExt(...)` / `...Async` | same, returns the full JSON (content, reasoning, model, usage) |
 | `osAICompletion(model, prompt, maxTokens)` / `...Async` | simple text completion |
 | `osAIImage(prompt, model, face, extraParams)` / `...Async` | generates an image and draws it on a prim face through the `imagedata` renderer; returns the texture asset UUID or an `ERROR:` string |

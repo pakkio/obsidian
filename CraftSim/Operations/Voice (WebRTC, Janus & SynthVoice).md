@@ -34,6 +34,22 @@ Voice in CraftSim is WebRTC voice for modern Second Life-derived viewers (Firest
 
 ## 2. How a call is wired
 
+```mermaid
+sequenceDiagram
+  participant V as Viewer (Firestorm / CraftStorm Web)
+  participant R as Region (os-webrtc-janus)
+  participant W as wolfvoice (Rust :9443 HTTPS)
+  V->>R: ProvisionVoiceAccountRequest
+  R->>W: JSON-RPC provision_voice_account_request (10 s timeout)
+  W-->>R: Account credentials
+  V->>R: VoiceSignalingRequest (SDP Offer / ICE)
+  R->>W: JSON-RPC voice_signaling_request
+  W-->>R: SDP Answer (DTLS fingerprint + SLData SCTP)
+  R-->>V: SDP Answer
+  V->>W: DTLS/SRTP Opus + SLData (positions, mute, roster)
+  W-->>V: Per-listener spatial mix (SRTP)
+```
+
 1. The viewer asks the region for a voice account (`ProvisionVoiceAccountRequest`) and then exchanges signalling (`VoiceSignalingRequest`: SDP and ICE candidates).
 2. The region does not mix audio. `WebRtcVoiceServiceConnector` forwards both requests to the voice server as **JSON-RPC 2.0 over HTTPS**, methods `provision_voice_account_request` and `voice_signaling_request`, parameters `request` / `userID` / `scene`. That contract matches wolfvoice's `docs/PROTOCOL.md`.
 3. wolfvoice needs `channel_type` of `local` or `multiagent` with a non-empty `channel`, which is why the region fills in the empty channel of a one-to-one (p2p) call before forwarding.

@@ -23,6 +23,21 @@ Rendering architecture, coordinate math, procedural geometry builders, instanced
 
 ---
 
+## Rendering pipeline & coordinate transform
+
+```mermaid
+flowchart LR
+  WS["Bridge WS Updates<br>(SL Z-up coords)"] --> Conv["SL Z-up -> three.js Y-up"]
+  Conv --> Geo["volume_build / sculpt_build<br>+ geo_worker (>= 4000 tris)"]
+  Geo --> Batch["Instancing (64 m cells)<br>+ BatchedMesh (256 m cells)"]
+  Geo --> BVH["bvh_worker.js<br>(three-mesh-bvh raycast)"]
+  Batch --> Render["WebGL Renderer<br>(WEBGL_multi_draw)"]
+```
+
+Second Life / OpenSim uses a right-handed **Z-up** world, while three.js uses **Y-up** ($-90^\circ$ rotation around the $X$ axis):
+
+$$\begin{pmatrix} x_{\text{three}} \\ y_{\text{three}} \\ z_{\text{three}} \end{pmatrix} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & 0 & 1 \\ 0 & -1 & 0 \end{pmatrix} \begin{pmatrix} x_{\text{SL}} \\ y_{\text{SL}} \\ z_{\text{SL}} \end{pmatrix}, \qquad q_{\text{three}} = (q_x,\; q_z,\; -q_y,\; q_w)$$
+
 ## Parts
 
 This note was split because it had grown too long. Read the parts in order or jump to the one you need.

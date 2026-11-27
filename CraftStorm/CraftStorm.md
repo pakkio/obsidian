@@ -17,11 +17,24 @@ aliases:
 
 ← Back to [[Benvenuto]] | Companion Server: [[CraftSim]]
 
-> **Updated 2026-10-18 (HEAD `7cbfa9609b`).** Web viewer and native notes were verified at commit `bba1a8b8f6` (2026-10-16); since then only `web/` bridge code changed (sharding, C extension, asset cache - see [[CraftStorm Bridge - Scaling, Cluster & csfast]]). `app.js` is untouched (12,778 lines, same build id). Working checkout is now `C:\Users\claudio.pacchiega\w\craftstorm`.
+> **Updated 2026-11-27 (GitHub HEAD `cf2d39a`, 2026-11-21).** Latest commits add viewer admin console MCP token minting on JWT command change (`cf2d39a`), Block mode for the create tool (`0445fc8`), and startup splash improvements (`e94907f`). Previous deep-dive line numbers were verified at `7cbfa9609b` (2026-10-18) / `bba1a8b8f6` (2026-10-16). Working checkout is `C:\Users\claudio.pacchiega\w\craftstorm`.
 >
-> Originally verified (`bba1a8b8f6`, 2026-10-16). Repo `git@github.com:pakkio/craftstorm.git` (remote `origin`), local `C:\Users\pakkio\w\craftstorm`, branch `main` (the only branch on `origin` besides a few feature and dependabot branches; there is no `origin/master`). Hub notes below were each re-checked against source; this page only summarises and links.
+> Originally verified (`bba1a8b8f6`, 2026-10-16). Repo `git@github.com:pakkio/craftstorm.git` (remote `origin`), branch `main`. Hub notes below were each re-checked against source; this page only summarises and links.
 
 **CraftStorm** is pakkio's two-track viewer for OpenSim / [[CraftSim]] / Second Life grids:
+
+```mermaid
+flowchart LR
+  subgraph Track1["Track 1: Web Viewer (web/)"]
+    Br["Browser / pywebview<br>three.js r186 + MeshBVH"] <-->|"WS + HTTP/HTTPS"| Cl["cluster.py / bridge.py<br>+ csfast.c + Cache"]
+  end
+  subgraph Track2["Track 2: Native C++ Viewer (indra/)"]
+    Nat["craftstorm-bin<br>(Firestorm Fork + Admin Console)"]
+  end
+  Cl <-->|"LLUDP / XML-RPC / CAPS"| Grid["OpenSim / [[CraftSim]] Grid"]
+  Nat <-->|"LLUDP / CAPS"| Grid
+  MCP["MCP Client"] -->|"POST /mcp (15 tools)"| Cl
+```
 
 1. **Web viewer (`web/`)** - a zero-install browser viewer (also wrapped as a `pywebview` desktop app), `APP_BUILD = 'v2.4.2 (2026-10-15)'` (`web/app.js:37`), built on **three.js `0.186.0`** and **three-mesh-bvh `0.9.15`** (`web/package.json`; both vendored in `web/vendor/`), paired with a Python `asyncio` bridge (`web/bridge.py`, now 7,036 lines) that speaks LLUDP/XML-RPC/CAPS to the grid.
 2. **Native C++ viewer (`indra/`)** - a Firestorm fork (target `craftstorm-bin`) with a small set of OpenSim fixes and branding (see the C++ note). History contains merges from `upstream/master` and `upstream/release/2025.07`.

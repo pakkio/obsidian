@@ -1,9 +1,29 @@
 # assegna
 
-> Workforce-to-place matching and reassignment toolkit.
+> Toolkit di matching e riassegnazione ottimale personale–sedi (~7.600 persone × 100 sedi in ~2 s) con KD-tree, distanza Haversine (cap 30 km) e programmazione lineare esatta (HiGHS), benchmarkato in Python, C e Scala.
 
 ## Concetti
-[[CLI]] [[Python]]
+[[CLI]] [[Python]] [[Scala]]
+
+## Pipeline di riassegnazione ottimale
+
+```mermaid
+flowchart LR
+  Org["gen_org.py<br>7600 dipendenti + 100 sedi"] --> KD["KD-tree spaziale<br>(raggio <= 30 km Haversine)"]
+  KD --> TopK["Top-K = 8 sedi + sede attuale<br>(~68.000 variabili sparse)"]
+  TopK --> LP1["Stage 1 LP (HiGHS):<br>priorità dipendenti important"]
+  LP1 --> LP2["Stage 2 LP (HiGHS):<br>ottimo globale lessicografico"]
+  LP2 --> Viz["export_viz.py / gen_map_html.py<br>(mappa HTML interattiva)"]
+```
+
+## Formulazione matematica
+La distanza geodetica tra due coordinate $(\phi_1, \lambda_1)$ e $(\phi_2, \lambda_2)$ sulla sfera terrestre ($R \approx 6371\text{ km}$) usa la formula di **Haversine**:
+
+$$d = 2 R \arcsin\!\sqrt{\sin^2\!\left(\frac{\phi_2 - \phi_1}{2}\right) + \cos\phi_1 \cos\phi_2 \sin^2\!\left(\frac{\lambda_2 - \lambda_1}{2}\right)}$$
+
+Poiché la matrice dei vincoli del problema di trasporto bipartito è **totalmente unimodulare**, il rilassamento continuo $x_{ij} \in [0, 1]$ ha vertici ottimi automaticamente interi $\{0, 1\}$ (nessun MILP necessario):
+
+$$\max \sum_{i} \sum_{j \in \mathcal{N}_K(i)} w_{ij}\, x_{ij} \quad \text{s.t.} \quad \sum_{j \in \mathcal{N}_K(i)} x_{ij} = 1\;\;\forall i, \quad \sum_{i} x_{ij} \le c_j\;\;\forall j, \quad 0 \le x_{ij} \le 1$$
 
 ## Panoramica
 # assegna
@@ -76,7 +96,7 @@ trick.
 
 ### The mobility rule, and why it's still one LP and not a MILP
 
-- **A, B** (substitutio
+- **A, B, C mobility tiers**, `protected_category`, `dependents`, `allow_relocating`, `busy` e livelli di competenza quantizzati vengono codificati direttamente nell'insieme ammissibile $\mathcal{N}_K(i)$ e nei pesi $w_{ij}$; i dipendenti prioritari sono gestiti con una doppia passata LP lessicografica (commit `1ee8108` / `873f918`). La logica di matching è verificata con copertura test in Python, C e Scala (`4c0c17f`).
 
 ## Tech Stack
 - Linguaggi: Python (12), Scala (5)

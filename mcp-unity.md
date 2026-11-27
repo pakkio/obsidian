@@ -1,6 +1,6 @@
 # mcp-unity
 
-> [![](https://badge.mcpx.dev?status=on 'MCP Enabled')](https://modelcontextprotocol.io/introduction)
+> Bridge MCP per Unity Editor (C# + Node.js). Nota verifica GitHub (2026-11-27): il repository attivo su `github.com/pakkio` è ora [[mcp-cck]] (`https://github.com/pakkio/mcp-cck`, `v1.8.1`).
 
 ## Concetti
 [[C Sharp]] [[JavaScript]] [[MCP]] [[TypeScript]] [[Unity]]

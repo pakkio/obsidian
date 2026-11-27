@@ -25,13 +25,17 @@ Source: `OpenSim/Region/OptionalModules/Scripting/OsDb/` (`OsDbModule.cs` 780 li
 
 ## 1. Architecture
 
+```mermaid
+flowchart LR
+  LSL["LSL Script"] --> API["OSSL_Api.osDb*<br>(ThreatLevel High + per-store lock)"]
+  API --> Mod["OsDbModule (per region)"]
+  Mod --> Store["OsDbStore (in-memory)<br>rows · secondary idx · OsDbVectorIndex"]
+  Store -->|"PersistToBackingStore"| NC["Owner Prim Notecard (JSONL)"]
 ```
-LSL script -> OSSL_Api.osDb*  (CheckThreatLevel(High); lock(per-store lock))
-           -> IOsDbModule (OsDbModule, one INonSharedRegionModule per region)
-                -> RegistryEntry { Lock, OwnerHostId, NotecardName, Nick, Attachments{hostId->count}, Store }
-                     -> OsDbStore { List<OSDMap> rows; id->rowIdx dict; field->value->{ids} secondary idx; field->OsDbVectorIndex }
-           -> PersistToBackingStore -> notecard on the OWNER prim (jsonl text)
-```
+
+Supported vector similarity/distance metrics in `OsDbVectorIndex`:
+
+$$\text{cos}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2\|\mathbf{v}\|_2}, \quad d_2(\mathbf{u}, \mathbf{v}) = \sqrt{\sum_i (u_i - v_i)^2}, \quad d_1(\mathbf{u}, \mathbf{v}) = \sum_i |u_i - v_i|$$
 
 - **Row model**: each row is an `OSDMap` (a JSON object). `AppendRow` (`OsDbStore.cs:70`) assigns a random UUID `"id"` when the row has none, an empty string id, or a non-string id. `id` is the primary key with an O(1) dictionary (`m_idIndex`). Ids are **not** de-duplicated: inserting the same id twice creates two rows and the id index points to the later one (documented on `ImportJsonl`, `OsDbStore.cs:~490`).
 - **Registry** (`OsDbModule.cs:56-81`): `m_registry` (storeId -> entry) and `m_keyToId` keyed by `(hostId, notecardName)`. `osDbCreate` is idempotent per (prim, notecard): the same id is returned and another reference is added (`CreateStore`, `OsDbModule.cs:176`).

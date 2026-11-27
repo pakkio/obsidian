@@ -1,9 +1,28 @@
 # rlm
 
-> Implementation of Recursive Language Models using **Gemini Flash 2.5**, based on the paper ["Recursive Language Models"](https://arxiv.org/abs/2512.24601) by Zhang, Kraska, and Khattab.
+> Implementazione dei Recursive Language Models (RLM, Zhang/Kraska/Khattab, arXiv:2512.24601) con Gemini Flash 2.5 e OpenRouter per elaborare contesti di 2+ ordini di grandezza oltre la finestra del modello.
 
 ## Concetti
 [[CLI]] [[LLM]] [[Python]]
+
+## Architettura ricorsiva RLM
+
+```mermaid
+flowchart TD
+  Doc["Documento lungo L >> W<br>(ambiente esterno)"] --> Split["Decomposizione in k chunk<br>ciascuno <= W"]
+  Split --> C1["RLM(chunk_1, q)"]
+  Split --> C2["RLM(chunk_2, q)"]
+  Split --> CK["RLM(chunk_k, q)"]
+  C1 --> Agg["Aggregazione / Sintesi ricorsiva"]
+  C2 --> Agg
+  CK --> Agg
+  Agg --> Ans["Risposta finale coerente"]
+```
+
+## Modello di complessità
+Un documento di lunghezza $L \gg W$ (finestra di contesto del modello base) viene partizionato con fattore di ramificazione $b$ in una gerarchia di profondità $h = \lceil \log_b (L / W) \rceil$: il costo cresce linearmente con la lunghezza del testo invece che quadraticamente con l'attenzione piena:
+
+$$C_{\text{full}}(L) = \mathcal{O}(L^2) \quad \longrightarrow \quad C_{\text{RLM}}(L) = \mathcal{O}\!\left(\frac{L}{W} \cdot W^2\right) = \mathcal{O}(L \cdot W)$$
 
 ## Panoramica
 # Recursive Language Model (RLM) Demo

@@ -1,9 +1,25 @@
 # ocrlocal
 
-> Pipeline locale PDF → Markdown con descrizione automatica delle figure via LLM vision.
+> Pipeline locale PDF → Markdown con routing automatico (`pdfplumber` / `Marker + Surya CUDA`), server web FastAPI, descrizione figure via VLM (Ollama offline / OpenRouter) e ricostruzione simboli matematici.
 
 ## Concetti
-[[OCR]] [[Python]]
+[[OCR]] [[Python]] [[LLM]]
+
+## Pipeline di conversione e post-processing
+
+```mermaid
+flowchart LR
+  PDF["Upload / CLI PDF<br>(server.py / convert.py)"] --> Route{"PDF digitale semplice?"}
+  Route -->|"Sì (< 1 s/pag)"| Plumb["pdfplumber"]
+  Route -->|"No (scansione / complesso)"| Mark["Marker + Surya OCR (CUDA)"]
+  Plumb --> MD["Markdown + JPEG figure"]
+  Mark --> MD
+  MD --> Fig["describe_figures.py<br>(minicpm-v Ollama / OpenRouter)"]
+  Fig --> Sym["fix_symbols.py<br>(ricostruzione simboli Unicode/LaTeX)"]
+  Sym --> Out["Markdown finale pulito"]
+```
+
+Aggiornamenti 2026-05-03: aggiunti server web **FastAPI** (`server.py`, upload PDF con auto-routing) e pipeline automatica di post-processing con fallback OpenRouter.
 
 ## Panoramica
 # marker

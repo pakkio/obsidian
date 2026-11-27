@@ -1,9 +1,24 @@
 # jev-biblio
 
-> > Harness Jev per verificare se le affermazioni di un testo sono sostenute dalle sue fonti.
+> Skepsis: harness Jev per verificare se le affermazioni di un articolo sono sostenute dalle sue fonti bibliografiche (1–5 stelle, 0,1–0,2 ¢ per analisi).
 
 ## Concetti
 [[LLM]] [[Python]]
+
+## Pipeline di verifica Skepsis
+
+```mermaid
+flowchart TD
+  In["Articolo + Bibliografia"] --> Sep["1. Separazione (Jev, se pagina intera)"]
+  Sep --> Fetch["2. Download parallelo fino a 15 URL<br>(curl_cffi TLS Chrome, deadline 30s)"]
+  Fetch --> Auth["3. Autorevolezza fonte in 4 fasce (Jev)"]
+  In --> Claims["4. Estrazione affermazioni (LLM)<br>fatti / conclusioni / opinioni"]
+  Auth --> Ver["5. Verifica affermazioni vs fonti (Jev)"]
+  Claims --> Ver
+  Ver -->|"casi incerti"| Reas["6. Reasoning LLM (OpenRouter)"]
+  Ver --> Score["7. Regole esplicite 1-5 stelle<br>+ giustificazione IT & costi"]
+  Reas --> Score
+```
 
 ## Panoramica
 # 📚 Skepsis
@@ -54,7 +69,7 @@ Senza `OPENROUTER_API_KEY` la dashboard funziona in modalità ridotta: divide l'
 | Passaggio | Chi lo fa | Cosa succede |
 |---|---|---|
 | 1. Separazione (solo se manca la bibliografia) | Jev, una chiamata con una domanda sì/no per paragrafo (riserva: euristica sui titoli di sezione) | Se l'utente incolla una pagina intera (articolo e bibliografia insieme) senza compilare il campo bibliografia, Jev classifica ogni paragrafo come "articolo" o "elenco di fonti" e taglia al primo paragrafo di bibliografia confermato da una maggioranza dei successivi. Senza questo, o se Jev non decide nulla, il testo resta tutto nell'articolo. |
-| 2. Link e fonti | Python | Scarica in parallelo fino a 15 URL pubblici, con un tetto complessivo di 8 s; legge HTML, testo e PDF entro limiti di dimensione. Usa `curl_cffi` per replicare l'handshake TLS di Chrome (alcuni siti dietro Cloudflare bloccano il fingerprint TLS di
+| 2. Link e fonti | Python | Scarica in parallelo fino a 15 URL pubblici (deadline complessiva 30 s, fix `794fb20`); legge HTML, testo e PDF entro limiti di dimensione. Usa `curl_cffi` per replicare l'handshake TLS di Chrome contro protezioni Cloudflare. |
 
 ## Tech Stack
 - Linguaggi: Python (8)

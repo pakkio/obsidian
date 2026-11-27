@@ -1,9 +1,24 @@
 # gemmafunction
 
-> A Python project demonstrating function calling capabilities with Google's Gemma/Gemini models using Poetry for dependency management.
+> Demo Python di function calling con Gemma/Gemini e OpenRouter: tool di esempio, ricerca file locale integrata con Everything Search (`es`) ed esplorazione automatica di siti web (`explore_website_links`).
 
 ## Concetti
 [[LLM]] [[Python]]
+
+## Flusso Function Calling
+
+```mermaid
+sequenceDiagram
+  participant U as Utente (CLI Chat)
+  participant M as Gemma / Gemini (Google AI / OpenRouter)
+  participant T as Tool locali (Python)
+  U->>M: Domanda in linguaggio naturale
+  M-->>T: Tool call JSON (weather / calculate / Everything Search / explore_website_links)
+  T-->>M: Risultato strutturato
+  M-->>U: Risposta finale
+```
+
+Aggiornamenti 2026-01-10 (repo privato https://github.com/pakkio/gemmafunction): aggiunti integrazione **Everything Search** (`FILE_SEARCH_INTEGRATION.md`, `EVERYTHING_SETUP.md`), tool `explore_website_links` con auto-discovery delle categorie e configurazione esternalizzata per OpenRouter.
 
 ## Panoramica
 # Gemma Function Calling Demo

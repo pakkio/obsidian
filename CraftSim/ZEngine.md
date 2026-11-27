@@ -39,10 +39,21 @@ tags:
 
 ## 2. Architecture and compilation pipeline
 
+```mermaid
+flowchart LR
+  Src["LSL + ZEXT"] --> Pre["ZIncludeResolver<br>+ ZMacroExpander"]
+  Pre --> Tok["ZLSLTokenizer<br>+ ZTemplateExpander"]
+  Tok --> Par["ZLSLParser (AST)<br>+ ZClassLowering"]
+  Par --> Inj["ZTrace / ZStep<br>+ ZFunctionInliner"]
+  Inj --> Typ["ZTypeInfer"]
+  Typ --> IR["ZIRCompiler<br>(Basic Blocks)"]
+  IR --> CIL["ZCILCodeGen<br>(Reflection.Emit -> .NET JIT)"]
+```
+
 Real order (from `ZEngine.cs` → `ZEngineInstance.CompileWithCache` → `CompileSourceUncached` → `ZCILCodeGen.Compile`):
 
 1. **Preprocess** (`ZIncludeResolver`, built at `ZEngine.cs:~807`/`1594`/`1817`/`2141`): resolves `#include "name"` (prim inventory) and `#include <asset-uuid>` (needs creator in `IncludeTrustedCreators` unless you created it), `#define`/`#undef`/`#if`/`#ifdef`/`#ifndef`/`#else`/`#endif` (macros via `ZMacroExpander`), and rewrites `#TRON/#TROFF/#STEP/#STOP` into line-preserving sentinel comments. With `ZEXT=false`, *any* line starting with `#` is a compile error (`ZIncludeResolver.cs:378-392`).
-2. **Tokenize + parse** (`ZLSLTokenizer`, `ZLSLParser(tokens, allowExtensions)`, `ZEngineInstance.cs:2965-2966`). Parser errors abort; a script without `default` state, or with an event not in `s_knownEvents` (other than synthesized `__ztimer_<name>` handlers), is rejected. Sugar is normalised into core AST here (f-strings, `foreach`, `["k" => v]`, `timer -> N:` hoisting). `switch/break/continue` are contextual keywords (`ZLSLParser.cs:~1687`) so legacy `integer switch = 0;` still parses.
+2. **Tokenize + parse** (`ZLSLTokenizer`, `ZLSLParser(tokens, allowExtensions)`, `ZEngineInstance.cs:2965-2966`). Parser errors abort; a script without `default` state, or with an event not in `s_knownEvents` (other than synthesized `__ztimer_<name>` handlers), is rejected. Sugar is normalised into core AST here (f-strings, `foreach`, `["k" => v]`, `timer -> N:` hoisting, `->` chains, Scala `for … yield`). Before parsing, `ZTemplateExpander` stamps out `<T>` generic templates on the token stream; after parsing, `ZClassLowering` turns classes into plain variables and functions ([[ZEXT Classes and Generics]]), so no later pass sees either. `switch/break/continue` are contextual keywords (`ZLSLParser.cs:~1687`) so legacy `integer switch = 0;` still parses.
 3. **`ZTraceInjector.Inject`** (`ZCILCodeGen.cs:69`) then **`ZStepInjector.Inject`** (`:76`) — before the inliner, so injected nodes go through the same passes as hand-written code. Trace statements are synthetic `llOwnerSay` calls formatted `script:line  <text>` and `script:line  EVENT name(param=value…)` (`ZTraceInjector.cs:167-215`). Step injection inserts `__zCheckpoint(line, depth, text)` (`ZStepInjector.CheckpointMarker`).
 4. **`ZFunctionInliner`** (`ZCILCodeGen.cs:111`): `ComputeAsyncFuncs` (`ZFunctionInliner.cs:82`) is a fixpoint over user functions that contain `->`/`await{}` or call such a function; those are inlined at their call sites (the same closure covers `llSleep`, `m_sleepFuncs`). `if` conditions with a suspending call get a prolog; `while`/`do-while`/`for` conditions are **rotated** (`RotateWhile :526`, `RotateDoWhile :532`, `RotateFor :544`) using a synthesized first-iteration flag `__lf<n>` (`:534,:557`) so `continue` keeps exact semantics; `a && susp()` / `a || susp()` are lowered to explicit `if`. After inlining, the now-unreachable function declarations are removed from `prog.Functions` (otherwise an `AsyncYield` would land in an unsplit plain method).
 5. **`ZTypeInfer`** (`ZCILCodeGen.cs:131`): types, implicit-conversion errors, ternary unification (a `list` branch forces the scalar branch to be boxed into a one-element list), decimal-vs-float mixing errors, and the ZEXT-gated string operators `"fmt" % [..]` and `str * n` (`ZTypeInfer.cs:431-452`).

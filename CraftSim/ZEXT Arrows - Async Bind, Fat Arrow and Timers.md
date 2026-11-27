@@ -24,6 +24,7 @@ Three different arrows, easy to confuse:
 | Arrow | Where | Meaning |
 | :--- | :--- | :--- |
 | `call(...) -> name` | statement | **async bind**: suspend the handler until that request's reply arrives, bind the payload |
+| `f(x) -> g(_) -> name` | statement | **chain**: each call waits for the previous one, `_` is its result (§1.1) |
 | `timer -> N:` / `timer "x" -> N:` | statement | **inline timer**: arm a timer here, the indented block is its handler |
 | `["k" => v]` | inside `[ ]` | **map literal**: notation for a flat key/value list |
 | `(params) => { }` | last argument of 3 calls | **closure** (a callback) |
@@ -42,6 +43,8 @@ Many OpenSim/CraftSim calls cannot return their result; they return a **request 
 | `f() -> (a, b)` or `-> [a, b]` | the payload is CSV-split in order; a name past the end gets `""` |
 | `f() -> x : 2.5 else:` | give up after 2.5 s and run the `else` block, then **carry on** after the statement (use `return` inside it to stop) |
 | `await:` + `call -> x` lines | fire several requests together, resume when **all** have answered (brace syntax: `await { … } : 15.0 else { … }`) |
+| `await { f() -> a : 2.0 else { … } g() -> b; }` | a **per-bind** timeout: if `f` does not answer in 2 s, `a` is `""`, the await keeps waiting for `g`, and that else runs after the resume (§1.2) |
+| `f(x) -> g(_) -> h(_) -> r` | a **chain** (§1.1) |
 
 It works in an event handler, **inside `if`/`while`/`for`/`switch` bodies**, and **inside user functions** (those are expanded into their callers). Recursion through a suspending function is a compile error. Natively, a waiting handler resumes selectively: the engine takes only the reply with the matching request key out of the event queue and leaves every other queued event for normal dispatch afterwards (`TryConsumeMatchingEvent`).
 
@@ -143,6 +146,45 @@ if llSubStringIndex(text, "ERROR:") == 0:
 - The reply is plain text; a failure is a reply that starts `ERROR:`, tested after the bind. A timeout and an `ERROR:` are different cases and are handled separately above.
 - `llGetTime()` keeps counting while the handler is suspended, so the milliseconds measured around the bind are the real wait.
 - The whole script, with `def say`, f-strings and `#indent`, is [[ZEXT Sugar and Async - Worked Examples]] §9 (`tasks/doc_reader_indent.lsl`).
+
+### 1.1 Chains (2026-11-20)
+
+A chain is several binds in one statement; every call waits for the one before it and gets its result:
+
+```lsl
+osFetchCleanAsync(url) -> osAIChatAsync(model, ["user", "Summarise: " + _], 256) -> string summary;
+f(x) -> a -> g(a) -> b -> h(b) -> c;      // name each step
+text -> f(_) -> g(_) -> result;           // start from a plain value (not a call)
+f(x) -> g(_) -> result : 10.0 else { llOwnerSay("gave up"); return; }
+```
+
+- After `->`, a name followed by `(` is the **next call**; anything else is the name(s) to bind, as in a single bind.
+- `_` stands for the previous step's result, anywhere in the next call's arguments (`llEscapeURL(_)`, `["user", _]`). Named steps can be used instead, or as well.
+- A trailing `: t else { … }` applies to **each step**: if any step does not answer within `t` seconds, the else block runs **once** and the remaining steps are skipped; then the handler carries on after the statement (unless the block returns).
+- Errors: a chain must end with a name (`f() -> g(_);` is refused); `_` after a step that binds several names (`-> (a, b)`) is ambiguous and refused; a chain inside `await { }` is refused (bind each call there).
+- Nesting has no depth limit: a chain or a bind can sit inside a loop, an `if` (also an unbraced one), a `switch`, another bind's else block, a timer body, a closure or a function that gets inlined.
+
+How it works: the **parser** rewrites the chain into ordinary binds, one per call. Unnamed steps bind generated locals `__zch<n>_<k>`, a plain starting value goes into a `let`, and with a timeout each step's else is `jump __zch<n>_else`, so the else body exists once. Nothing new reaches the runtime or the desugarer: `zengine desugar` output for a chain is just the binds (`ZDesugarTest.TestAsyncChainIsEquivalent` compares the two runs). Tests: `ZAsyncChainTest` (8).
+
+> [!INFO] Found on the way
+> The chain is held in a statement group that adds no scope (`InlineBlock`, also used by list comprehensions). Several compiler passes did not look inside one: the function inliner, the heap-local discovery in `ZCILCodeGen` and the timer-sugar walkers. A `->` in such a group (an unbraced `if` body, a `switch` case) crashed the compiler with `The given key '__zch0_0' was not present in the dictionary`. All of them descend into it now.
+
+### 1.2 Per-bind timeouts inside `await` (2026-11-20)
+
+```lsl
+await {
+    llHTTPRequest(url, [], "") -> body : 2.0 else { llOwnerSay("web was slow"); }
+    osMLpredictAsync("m", [1.0]) -> score;
+}
+llOwnerSay("score " + score + ", body length " + (string)llStringLength(body));
+```
+
+Each bind may carry its own `: t else { … }`. A bind that runs out of time is resolved as timed out (its names are `""`) and the await **keeps waiting for the others**; once every bind has answered or timed out the handler resumes and the else block of each timed-out bind runs, in source order. Such a block may wait again (a `->` or `await` inside it), and `return` in it ends the handler. An `await { … } : t else { … }` on the whole group that fires first wins and the per-bind blocks are skipped.
+
+Before this the parser accepted the syntax but the compiler dropped the per-bind timeout and else, so a reply that never came hung the handler for good. Natively each slot now has its own deadline (`AsyncAwaitSlot.DeadlineTicks`, `ExpireFanOutSlots`); which slots timed out is copied into generated `__zfto<n>` locals before any else block runs. `zengine desugar` **refuses** it (its lowering drives a whole `await` from one `llSetTimerEvent`). Tests: `ZAsyncFanOutTimeoutTest` (11, including four levels of nesting).
+
+> [!WARNING] Lost wakeup, found and fixed while adding this (2026-11-20)
+> A bind or `await` with a timeout also *sleeps* until its deadline, and the engine refused to reschedule a sleeping instance. A reply that arrived after the worker's last check, while the worker still held the script, therefore sat in the queue until the timeout fired. The second `await` of a loop hit it almost every time (its replies arrive at once), resuming after the full timeout with the replies in hand; the per-bind change above made that timing certain. `NeedsReschedule()` now reschedules an awaiting script when a matching reply is queued (looked at, not taken, so unrelated events cannot make workers spin). A plain `->` with a timeout had the same exposure. Tests: `AwaitInALoopResumesOnTheReplyNotTheTimeout`, `BindInALoopResumesOnTheReplyNotTheTimeout`.
 
 ### How `zengine desugar` lowers it
 

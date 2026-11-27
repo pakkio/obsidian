@@ -113,7 +113,10 @@ x && (c ? a : b)              →   integer t; if (x) { <prolog>; if (r) t = 1; 
 
 - the `decimal(p,s)` type (no fixed-point type in LSL; mapping it to `float` would change rounding);
 - a closure anywhere except the last argument of `llSetTimerEvent` / `llListen` / `llSensor` (ZEngine rejects it too);
-- recursion through a function that suspends (the inliner cannot expand it).
+- recursion through a function that suspends (the inliner cannot expand it);
+- a per-bind timeout inside `await { }` (`await { f() -> a : 2.0 else { … } … }`, 2026-11-20): ZEngine runs it natively, but this lowering drives a whole `await` from one `llSetTimerEvent`. It used to be dropped silently, so the output hung where the original did not; it is refused now. Put the timeout on the whole group (`await { … } : t else { … }`).
+
+`->` chains (`f(x) -> g(_) -> r`) need nothing here: the parser has already turned them into ordinary binds.
 
 Everything else in this family was refused at some point before 2026-10-22 and no longer is: `?:` in loop headers, `->` and `await` inside `if` / loops / `switch` / functions, string `*` and `%`, string `case` ranges, `?:` in a global initialiser.
 

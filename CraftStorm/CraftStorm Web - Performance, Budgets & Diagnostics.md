@@ -51,6 +51,22 @@ Load statistics (`animate`, `app.js:12172-12193`): `loadAvgMs` is an EMA of the 
 
 ## 2. Adaptive resolution, load shedding and auto-rescue
 
+### Load telemetry & hysteresis equations
+Frame load and adaptive render scale track exponential moving averages (EMA), while the triangle budget (`TRI_BUDGET = 1.5e6`) applies asymmetric multiplicative hysteresis to `tinyPxScale`:
+
+$$\mathrm{EMA}_t = \alpha\, x_t + (1 - \alpha)\,\mathrm{EMA}_{t-1} \quad (\alpha_{\text{load}} = 0.05,\; \alpha_{\text{scale}} = 0.10)$$
+
+$$s_{t+1} = \begin{cases} \min(24,\; 1.12\, s_t) & \text{tris} > B_{\text{tri}} \\ \max(1,\; s_t / 1.03) & \text{tris} < 0.7\, B_{\text{tri}} \\ s_t & \text{otherwise} \end{cases}$$
+
+```mermaid
+stateDiagram-v2
+  [*] --> Normal
+  Normal --> L1_Trim : loadAvgMs > 40 or peak > 150
+  L1_Trim --> L2_Severe : loadAvgMs > 80 or peak > 300 or draws > 2500
+  L1_Trim --> Normal : clear for 2.0 s
+  L2_Severe --> Normal : clear for 2.0 s
+```
+
 ### Dynamic resolution (`updateRenderScale`, `app.js:175-218`)
 Skipped when a fixed resolution is chosen (HUD "Resolution" select, `craftstorm_resolution_v2` in localStorage, `'auto'` default) or while the perf probe runs.
 - Starts at `renderPixelRatio = 0.5`, bounds `MIN_PIXEL_RATIO` (0.6 weak GPU / 0.75) and `MAX_PIXEL_RATIO` (1.0 weak GPU / 1.5, capped by devicePixelRatio).

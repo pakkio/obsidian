@@ -45,6 +45,21 @@ This note was split because it had grown too long. Read the parts in order or ju
 
 ## 7. The layers side by side
 
+```mermaid
+flowchart LR
+  In["Asset / Object / Script"] --> Can{"Tipo"}
+  Can -->|"Object XML"| Norm["ObjectAssetCanonicalizer<br>(rimuove campi identità)"]
+  Can -->|"Raw Blob"| Hash["SHA-256 Content Hash"]
+  Norm --> Hash
+  Hash --> Store["assetdata + assetvariants<br>(SQLite / MySQL / PGSQL)"]
+  Can -->|"LSL Source"| Code["SHA-256 -> m_compileCache<br>(CIL condiviso in RAM)"]
+  Store -->|"miss locale"| FB["AssetFallbackHandler<br>(Secondary Server)"]
+```
+
+Storage savings ratio across $N_{\text{refs}}$ logical references pointing to $N_{\text{blobs}}$ unique SHA-256 blobs:
+
+$$\text{Dedup Ratio} = \frac{\sum_{i=1}^{N_{\text{refs}}} b_i}{\sum_{j=1}^{N_{\text{blobs}}} b_j}, \qquad \text{Saved} = 1 - \frac{\sum b_j}{\sum b_i}$$
+
 | Layer | What is shared | Key | Where it lives | Reclaimed by |
 | :--- | :--- | :--- | :--- | :--- |
 | Asset blob | identical asset bytes (scripts, textures, notecards, ...) | SHA-256 of the bytes | `assetdata` table (SQLite/MySQL/PostgreSQL) | `assets sweep` |

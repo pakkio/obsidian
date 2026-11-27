@@ -1,9 +1,24 @@
 # soup-pakkio
 
-> A small demo of [Soup](https://github.com/MakazhanAlpamys/Soup) (a CLI for fine-tuning LLMs)
+> Confronto sperimentale tra fine-tuning LoRA SFT (`r=32`, 4-bit su GTX 1080 8 GB) e retrieval BM25 RAG su `google/gemma-3-1b-it` per documentazione CLI (Soup).
 
 ## Concetti
-[[Python]] [[RAG]]
+[[Python]] [[RAG]] [[LLM]]
+
+## Confronto sperimentale: LoRA SFT vs BM25 RAG
+
+```mermaid
+flowchart TD
+  Docs["Soup README + docs/commands.md"] --> SFT["make_data.py -> LoRA SFT (r=32, 4-bit)<br>Gemma 3 1B (~5 GB VRAM)"]
+  Docs --> RAG["rag_demo.py -> Retrieval BM25<br>+ Gemma 3 1B base"]
+  SFT --> R1["Apprende lo stile ma inventa flag<br>(allucinazioni su comandi/versioni)"]
+  RAG --> R2["Comandi e versioni esatti<br>e facili da tenere aggiornati"]
+```
+
+## Parametri LoRA
+Con rango $r = 32$ in quantizzazione 4-bit, gli aggiornamenti sui pesi lineari $W_0$ aggiungono solo $r(d_{\text{in}} + d_{\text{out}}) \ll d_{\text{in}} d_{\text{out}}$ parametri addestrabili:
+
+$$W' = W_0 + \frac{\alpha}{32}\, B A$$
 
 ## Panoramica
 # soup-pakkio

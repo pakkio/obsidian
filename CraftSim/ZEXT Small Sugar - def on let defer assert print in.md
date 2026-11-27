@@ -91,6 +91,9 @@ Mechanics, because they explain the corner cases: the statement is kept as a **t
 
 ## 8. List comprehension
 
+> [!TIP] Several generators, guards, and use anywhere
+> The Scala form `for (x <- xs; y <- ys if c) yield e` (2026-11-20) has no single-generator or declaration-only limit and usually needs no element type: [[ZEXT For Comprehensions (Scala)]].
+
 ```lsl
 list odds = [i for integer i in [1,2,3,4,5,6] if i % 2 == 1];
 names = [(string)x + "!" for integer x in l];

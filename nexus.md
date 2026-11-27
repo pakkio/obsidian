@@ -22,10 +22,28 @@ Il **NPC AI Brain** trasforma gli NPCs statici di OpenSim in personaggi intellig
 - 🌍 **Integrazione mondo di gioco** completa
 
 ### **Flusso Funzionale**
+
+```mermaid
+sequenceDiagram
+  participant Av as Avatar (OpenSim)
+  participant LSL as Script NPC LSL
+  participant API as Nexus Server (Flask)
+  participant LLM as LLM (OpenRouter)
+  participant DB as Database (Profili/Lore)
+  Av->>LSL: Si avvicina (Sensor)
+  LSL->>API: POST /sense
+  API->>DB: Carica lore + profilo player
+  API->>LLM: Genera saluto + emote SL
+  LLM-->>API: Risposta + comandi
+  API-->>LSL: Testo + animazione
+  Av->>LSL: Messaggio chat
+  LSL->>API: POST /api/chat
+  API-->>LSL: Risposta contestuale + update memoria
+  Av->>LSL: Si allontana
+  LSL->>API: POST /leave
 ```
-Avatar si avvicina → Sensor rileva → API /sense → LLM genera saluto → 
-Chat continua → API /chat → Risposte AI → Avatar si allontana → API /leave
-```
+
+Aggiornamenti recenti (settembre 2026): ripristino scambi quest (*quest trades*), arbitro duplicati Jev e health endpoint `1.0.4` (repo: https://github.com/pakkio/nexus). Vedi anche [[Nexus - Lore]], [[Nexus - Esempio di storia]], [[nexus2]].
 
 ## **Quick Start**
 
@@ -75,20 +93,11 @@ string AREA_NAME = "Village";                   // Area NPC
 
 ## **Architettura**
 
-```
-┌─────────────────┐    HTTP     ┌──────────────────┐    OpenRouter    ┌─────────────┐
-│   OpenSim LSL   │ ◄─────────► │   Nexus Server   │ ◄──────────────► │     LLM     │
-│   NPC Script    │             │   (Flask API)    │                  │  (Gemini/   │
-└─────────────────┘             └──────────────────┘                  │  Llama/etc) │
-                                          │                            └─────────────┘
-                                          ▼
-                                ┌──────────────────┐
-                                │    Database      │
-                                │  (File/MySQL)    │
-                                │ - NPCs           │
-                                │ - Conversazioni  │
-                                │ - Profili Player │
-                                └──────────────────┘
+```mermaid
+flowchart LR
+  LSL["OpenSim LSL<br>NPC Script"] <-->|"HTTP /sense, /api/chat, /leave"| Srv["Nexus Server<br>(Flask API)"]
+  Srv <-->|"OpenRouter"| LLM["LLM (Gemini / Llama / Jev arbiter)"]
+  Srv --> DB["Database (File / MySQL)<br>NPCs · Conversazioni · Profili Player"]
 ```
 
 ## **NPCs Disponibili**

@@ -17,6 +17,22 @@ aliases:
 
 One `bridge.py` is one Python process, so every user's UDP circuit, WebSocket and decode work shared one core. Ten commits on 2026-10-17/18 attack that.
 
+```mermaid
+flowchart LR
+  Clients["Browsers (cookie cs_shard)"] --> Front["cluster.py Front (:8088 / TLS :8443)<br>ResponseCache (1 GiB) + inflight coalescing"]
+  Front --> S1["Shard 0 (:18100)<br>bridge.py + csfast.c"]
+  Front --> S2["Shard N (:18100+N)<br>bridge.py + csfast.c"]
+  S1 --> Pool["ProcessPoolExecutor<br>(J2K wavelet decode / mesh)"]
+  S2 --> Pool
+  Pool --> Cache["Shared Disk Cache + flock slots<br>(~/.craftstorm-cache)"]
+  S1 <-->|"LLUDP / CAPS"| Sim["OpenSim / CraftSim"]
+  S2 <-->|"LLUDP / CAPS"| Sim
+```
+
+Decoding only the served wavelet resolution factor ($2048\text{px} \to 512\text{px}$) reduces cold-cache J2K decode cost by $13.8\times$:
+
+$$S_{\text{J2K},2048} = \frac{709\text{ ms}}{51\text{ ms}} = 13.9\times, \qquad S_{\text{J2K},1024} = \frac{179\text{ ms}}{48\text{ ms}} = 3.7\times$$
+
 ### 1 `web/cluster.py` - sharded bridge behind a sticky front
 - Starts `CRAFTSTORM_SHARDS` copies of the bridge on loopback (`CRAFTSTORM_SHARD_BASE_PORT`, default `18100`; `BRIDGE_HOST=127.0.0.1`) and a byte-level front on `BRIDGE_PORT`. **Default shards: `min(8, cpu_count-1)`** (source comment: 8 measured best for 200 users on a 32-core host, 12 was slower).
 - **Stickiness**: first page load is redirected once with a `cs_shard` cookie naming the least-loaded shard (`pick_shard`, by live WebSocket count); the WebSocket and `/texture /mesh /anim /sound` fetches (which need the session's caps) carry the cookie. Cookie-less clients (curl, MCP) go to the least-loaded shard.

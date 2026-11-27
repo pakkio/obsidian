@@ -1,9 +1,21 @@
 # browser
 
-> A sleek, modern web-based file browser with support for multiple file types including PDFs and comic book archives. Built with Node.js and Express, featuring a stunning glassmorphism UI.
+> Modern File Browser (`v3.1.3`): file browser web glassmorphism in Node.js/Express con viewer PDF/EPUB/CBZ/CBR/Office/video, OAuth2, cache, client Android e tooling Rust.
 
 ## Concetti
-[[JavaScript]] [[Web]]
+[[JavaScript]] [[Web]] [[Rust]] [[Java]]
+
+## Architettura (`v3.1.3`)
+
+```mermaid
+flowchart LR
+  UI["Web UI Glassmorphism<br>+ Client Android (android/)"] --> Exp["Express Server (Node.js)<br>auth.js · cache.js"]
+  Exp --> Docs["PDF / EPUB / CBZ / CBR / Office"]
+  Exp --> Media["Immagini / Audio / Video<br>(FFmpeg + sottotitoli SRT/VTT)"]
+  Exp --> Health["Rilevamento file corrotti<br>sui tile (v3.1.3)"]
+```
+
+Aggiornamenti recenti (`v3.1.3`, 2026-11-26): segnalazione visiva dei file corrotti direttamente sui tile della libreria con indicazione del motivo, parità test Jest (`jest.parity.config.js`), client `android/` e componenti Rust/installer.
 
 ## Panoramica
 # 🗂️ Modern File Browser
@@ -107,12 +119,11 @@ This project is partially runnable on Windows. The core file browsing and viewin
 *   **CBR (RAR) comic book viewing:** The server won't be able to extract pages from `.cbr` files.
 *   **Video transcoding:** The server won't be able to transcode `.avi` and `.wmv` files.
 
-To make the project fully runnable on Windows, you will need to install the followi
+To make the project fully runnable on Windows, install FFmpeg, ImageMagick/GraphicsMagick and unrar/7-Zip in `PATH` (oppure usa l'installer in `installer/`).
 
 ## Tech Stack
-- Linguaggi: JavaScript (78)
-- File totali (scan): 108
-- Estensioni principali: .js=78, .md=8, (noext)=4, .html=4, .json=2, .db=2, .db-shm=2, .db-wal=2
+- Linguaggi: JavaScript, HTML, CSS, Rust, Java (`android/`), Shell/PowerShell (`justfile`)
+- Ultima release: `v3.1.3` (2026-11-26)
 - Remote: `https://github.com/pakkio/browser.git`
 
 ## Struttura (top-level)

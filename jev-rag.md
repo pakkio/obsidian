@@ -1,9 +1,32 @@
 # jev-rag
 
-> A small, readable Retrieval-Augmented Generation (RAG) web app. You upload documents, ask
+> Tiny RAG + Jev: web app RAG leggibile con pipeline ispezionabile passo-passo, embeddings multilingua su GPU e verifica frase-per-frase con Jev (repo GitHub: `pakkio/gev-rag`).
 
 ## Concetti
 [[Database]] [[LLM]] [[Python]] [[RAG]]
+
+## Architettura RAG + Jev
+
+```mermaid
+flowchart LR
+  subgraph Ingest["Ingest (per documento)"]
+    L["Load (PDF/MD/TXT)"] --> CH["Chunk (800 char + overlap)"]
+    CH --> EM["Embed 768-dim ONNX/CUDA"]
+    EM --> ST["Store (vectors.npy + chunks.json)"]
+  end
+  subgraph Query["Query (per domanda)"]
+    Q["Domanda"] --> QE["Embed"] --> RET["Retrieve top-k"]
+    RET --> GEN["Augment -> Local LLM / Flash / Claude"]
+    RET --> JEV["Jev Select (Noul + Choice)"]
+    GEN -->|"bozza citata"| VER["Jev Verify frase per frase"]
+  end
+  ST --> RET
+```
+
+## Retrieval matematico
+Poiché i vettori $\mathbf{v}_i \in \mathbb{R}^{768}$ (`paraphrase-multilingual-mpnet-base-v2`) e il vettore della query $\mathbf{q}$ sono normalizzati ($\|\mathbf{v}_i\|_2 = \|\mathbf{q}\|_2 = 1$), il prodotto scalare `vectors @ query_vec` corrisponde esattamente alla similarità coseno:
+
+$$\mathrm{sim}(\mathbf{q}, \mathbf{v}_i) = \frac{\mathbf{q} \cdot \mathbf{v}_i}{\|\mathbf{q}\|_2\,\|\mathbf{v}_i\|_2} = \mathbf{q}^\top \mathbf{v}_i$$
 
 ## Panoramica
 # Tiny RAG + Jev
@@ -55,10 +78,8 @@ RAG has two pipelines. **Ingest** runs once per document. **Query** runs on ever
 | Generate | `rag/local_llm.py`, `rag/gemini_llm.py`, `rag/generator.py` | The LLM answers only from that context and cites `[n]` | model |
 | Select | `rag/jev.py` | Code splits chunks into sentences; in **one** request Jev judges "is the answer here?" (Noul) and "which sentence?" (Choice). With the Flash engine also on, an LLM drafts a detailed cited answer in parallel and Jev verifies each sentence as it completes: supported facts kept, partly supported or a character's guesses kept inside `[[ ]]`, unsupported sentences dropped | confidence thresholds |
 
-`rag/pipeline.py` connects the steps and records the trace. `app.py` is the HTTP API.
-Each retrieved source also names the **chapter** its chunk belongs to (see below).
-
-### Beyond top-k: book cards, chapters and librar
+`rag/pipeline.py` connects the steps and records the trace. `app.py` is the HTTP API (con UI chat in streaming, book cards, tracking capitoli e domande library-wide).
+Each retrieved source also names the **chapter** its chunk belongs to.
 
 ## Tech Stack
 - Linguaggi: Python (17)

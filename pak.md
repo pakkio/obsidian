@@ -1,17 +1,28 @@
 # pak
 
-> Impacchetta un intero folder per analizzarlo con AI.
+> CLI Python per impacchettare un intero folder in un contesto compresso ottimizzato per LLM (`--smart`, compressione AST/semantica, token budget) e applicare modifiche via `pakdiff` (`v4.3.0`).
 
 ## Concetti
 [[LLM]] [[CLI]] [[Python]]
 
 ## Panoramica
-CLI che comprime semanticamente più file in un formato adatto agli LLM e riestrae il codice modificato nella struttura giusta. Funzioni: raccolta file con esclusioni (.git, venv, node_modules), compressione semantica (AST e anche LLM), diff a livello di metodo (`PAKDIFF.md`), prioritizzazione, gestione del budget di token, multi-linguaggio.
+Elimina il copia-incolla manuale verso Claude/ChatGPT (repo: https://github.com/pakkio/pak, ultimo push 2025-08-07): raccoglie selettivamente i file (`--smart`, esclusioni `.git`/`venv`/`node_modules`), misura il budget di token con `tiktoken`, comprime il codice a livello AST/semantico e gestisce patch strutturate a livello di metodo (`PAKDIFF.md`, `pakdiff v4.3.0` multi-linguaggio).
 
-File: `pak.py`, `pak_compressor.py`, `pak_differ.py`, `semantic_compressor.py`, `pak_analyzer.py`, `ast_helper.py`.
+## Pipeline
+
+```mermaid
+flowchart LR
+  Repo["Cartella sorgente"] --> Col["Raccolta --smart<br>(esclusioni + priorità)"]
+  Col --> Comp["Compressione AST / semantica<br>+ budget tiktoken"]
+  Comp --> LLM["Contesto compatto per LLM"]
+  LLM --> Diff["pakdiff v4.3.0<br>(patch a livello metodo)"]
+```
+
+File principali: `pak.py`, `pak_analyzer.py`, `pak_archive_manager.py`, `ast_helper.py`, `llm_wrapper.py`, `hook-tiktoken.py`, `PAKDIFF.md`.
 
 ## Tech Stack
-Python (Poetry, tiktoken). Repo: https://github.com/pakkio/pak
+- Python (tiktoken, AST), Shell (`install.sh`, `build_and_deploy.sh`).
+- Repository: https://github.com/pakkio/pak (pubblico, verificato 2026-11-27)
 
 ## Collegamenti
 [[pakagent]], [[rlm]]

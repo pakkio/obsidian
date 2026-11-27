@@ -48,10 +48,10 @@ All implementations live in one partial class: `OpenSim/Region/ScriptEngine/Shar
 
 ## 1. `osOcr` - Image, PDF and document text extraction
 
-> **Since 2026-11-07 the default engine is PaddleOCR (`"paddle"`), run locally; see the engine list below and [[#PaddleOCR]].** Word, Excel, PowerPoint, OpenDocument, text files and notecards are read directly, with no OCR (step 3 of the flow).
+> **Since 2026-11-21 the default engine is Indra OCR (`"indra"`, alias `"local"`), the Python `indra_ocr` package run locally; see [[#Indra OCR]].** From 2026-11-07 to 2026-11-21 it was PaddleOCR (`"paddle"`, [[#PaddleOCR]]), still available and the fallback. Word, Excel, PowerPoint, OpenDocument, text files and notecards are read directly, with no OCR (step 3 of the flow).
 
 ### Signatures (`IOSSL_Api.cs:899-904`)
-- `string osOcr(string source, string prompt)` - the engine is the configured default (`[OSSL] OcrDefaultEngine`, `"paddle"` unless changed). Before 2026-11-07 it was `"llm"`.
+- `string osOcr(string source, string prompt)` - the engine is the configured default (`[OSSL] OcrDefaultEngine`, `"indra"` unless changed). It was `"paddle"` from 2026-11-07 and `"llm"` before.
 - `string osOcr(string source, string prompt, string engine)`
 - `LSL_Key osOcrAsync(string source, string prompt)` / `LSL_Key osOcrAsync(string source, string prompt, string engine)` - result arrives via `dataserver`. Same default.
 
@@ -64,20 +64,33 @@ All implementations live in one partial class: `OpenSim/Region/ScriptEngine/Shar
 5. For that no-text-layer case `ExtractPdfImages(data, MaxPdfOcrImages = 10)` (`:10028`, `:10021`) pulls embedded page images (PNG, or raw JPEG) in page order - no native PDF rasterizer is used - and each image is OCR'd separately; texts are joined with `\n`. If there are no images the error is `<no text layer error> and no embedded images to OCR`. If every image fails the first error is returned.
 6. Non-PDF data goes straight to `OcrImage`.
 
+Since 2026-11-21 `ResolveOcrEngine` maps `"local"` to `"indra"`, and a call naming no engine falls back **indra → paddle → llm** when an engine is not installed; naming `"indra"`/`"local"` explicitly returns `ERROR: the indra_ocr package is not usable with '...' ([OSSL] IndraPythonPath): ...` instead.
+
 ### Engines
-- `"paddle"` (default since 2026-11-07; `OcrViaPaddle`, class `PaddleOcr` in `PaddleOcr.cs`): see [[#PaddleOCR]] below.
+- `"indra"` / `"local"` (default since 2026-11-21; `OcrViaIndra`): see [[#Indra OCR]] below.
+- `"paddle"` (default 2026-11-07 to 2026-11-21; `OcrViaPaddle`, class `PaddleOcr` in `PaddleOcr.cs`): see [[#PaddleOCR]] below.
 - `"llm"` (`OcrViaLlm`, `:10099`): builds an OpenRouter multimodal `messages` array (text part + `image_url` data-URL, MIME sniffed by `SniffImageMimeType`) and calls `CallOpenRouter(model, messages, 2048)` directly - deliberately not through public `osAIChat`, so the threat-level audit trail says `osOcr`. Model is hard-coded `"openai/gpt-4o-mini"` in both `osOcr` and `osOcrAsync` (`:10160`, `:10234`) - there is no config key or parameter to change it. Default prompt when empty: `"Transcribe all text in this image."`. Needs `osAISetOpenRouterAPIKey()` first (`:8889`).
 - `"tesseract"` (`OcrViaTesseract`, `:10120`): `Tesseract` NuGet 5.2.0 (`Directory.Build.props:17`), language hard-coded `"eng"`, `EngineMode.Default`, image loaded with `Pix.LoadFromMemory`. The `prompt` argument is ignored. Without `[OSSL] TesseractDataPath` it returns `ERROR: [OSSL] TesseractDataPath is not configured`.
 
 ### Configuration
 | Key | Default | Where |
 | :--- | :--- | :--- |
-| `[OSSL] OcrDefaultEngine` | `paddle` | engine for a call that names none: `paddle`, `llm` or `tesseract` (added 2026-11-07) |
+| `[OSSL] OcrDefaultEngine` | `indra` | engine for a call that names none: `indra` (or `local`), `paddle`, `llm` or `tesseract` (added 2026-11-07; default `paddle` until 2026-11-21) |
+| `[OSSL] IndraPythonPath` | `""` | Python with `indra_ocr`; empty = the first `indra/.venv` at `bin/..` or `bin/../..` (the `../indra` checkout), else `python` on PATH |
+| `[OSSL] IndraModelPath` | `""` | passed as `--model-dir` (relative to `bin/`); empty = `INDRA_OCR_MODEL_DIR`, else downloaded from Hugging Face (`datalab-to/indra-ocr`) on first use and cached |
 | `[OSSL] PaddleOcrModelPath` | `models/ocr` (relative to `bin/`) | directory with the PaddleOCR ONNX models; not in git (`.gitignore`: `bin/models/`) |
 | `[OSSL] TesseractDataPath` | `""` (engine unavailable) | read at `OSSL_Api.cs:245`; a comment there notes missing/mismatched data silently gives empty or garbage text |
 | `MaxOcrFetchBytes` | 25 MiB | **compile-time `const`** (`:9857`), not an ini key. Enforced on `Content-Length` and while streaming (`:9886`, `:9902`) |
 
 `bin/preflight.sh:82-85` warns if `TesseractDataPath` is set but is not a directory. A similar startup warning list exists at `OSSL_Api.cs:8884-8889` (missing path / non-directory / missing OpenRouter key).
+
+### Indra OCR
+
+Added 2026-11-21 (commit `88d0778c59`), the default engine. `OcrViaIndra` writes the bytes to a temporary file named by their magic (png/jpg/gif/bmp/pdf; the CLI picks its reader by extension) and runs `python -m indra_ocr --format text <file>` (`RunIndra`: `ArgumentList`, both pipes drained concurrently, `PYTHONIOENCODING=utf-8` because Windows Python otherwise writes the console code page, 120 s timeout). `FindIndraPython` checks the interpreter once with `--version` and caches the answer until restart. `bin/preflight.sh` warns when the default is indra and it cannot run.
+
+- **Measured** (2026-11-20, `../indra/bench2.py`, 18 pages of arXiv papers and the Italian GDPR text at 200 dpi, 6 degraded like scans): indra word F1 0.916 / char accuracy 0.899 / 0.8 s a page; Tesseract 0.898 / 0.912 / 2.1 s; Python PaddleOCR (PP-OCRv5 mobile) 0.902 / 0.698 / 63 s. Italian accents read exactly.
+- **On craft**: `indra-ocr` 1.1.2 in `/root/pakkio/indra/.venv` (made with `uv`, since `python3-venv` is not installed); about 1.5 s a call warm, 2.5-5 s including Python start-up through `osOcr`.
+- **Script use**: `osOcr("receipt", "")` (default), `osOcr("receipt", "", "local")`, or `osOcrAsync(...)` with the text in `dataserver`. The prompt is ignored.
 
 ### PaddleOCR
 Added 2026-11-07 (commit `a1c6b7584e`). Code: `OpenSim/Region/ScriptEngine/Shared/Api/Implementation/PaddleOcr.cs`; glue in `OSSL_Api.cs` (`GetPaddleOcr`, `OcrViaPaddle`, `ResolveOcrEngine`). It runs PP-OCR inside the simulator on `Microsoft.ML.OnnxRuntime` (already a dependency, `Directory.Build.props`): no Python, no native OCR library, no network, no per-call fee.
@@ -90,10 +103,10 @@ Added 2026-11-07 (commit `a1c6b7584e`). Code: `OpenSim/Region/ScriptEngine/Share
 - **Checked on the live server** (`zengine run <script> --wait 20000 --image upright <png> --image flipped <png>` and a script calling `osOcr(name, "")`): both an upright and a half-turned picture of three lines of accented Italian came back exact, in order. Only the unnamed call was used, and with no OpenRouter key and no Tesseract data path, only Paddle can have produced it. **Not tested:** photographs, skewed or noisy scans, vertical text (not rotated). **Cold start, measured after the OpenSim restart on 2026-11-07:** the first call (it loads the models) took 4.3 s against 4.0 s for the next on a 1241 x 4714 page, so loading costs about 0.25 s (the earlier guess of a second was too high); `zengine run` still needs `--wait` for a long page. **The tiled version is live since that restart (OpenSim pid 409848)**: the 2481 x 9427 page (23 MP, refused before) was read in 11.6 s, 1,922 characters, and the small picture in 0.14 s.
 - **Measured on a real scan, 2026-11-07.** A supermarket receipt PDF (a text-layer PDF, 595 x 2262 pt, so it is not OCR'd in `osOcr`) was rasterised with poppler `pdftoppm` at 150 / 200 / 300 dpi (1241 x 4714, 1654 x 6285, 2481 x 9427 px) and read as a plain PNG, compared with the PDF's own text layer (300 words, `pdftotext`): shrunk to 1,280 px **48%** of the words found (1.6-1.7 s); tiles **88% / 91% / 88%** (150 / 200 / 300 dpi) in about **4 s / 6.5 s / 12 s** (the 300 dpi page was refused before the tiling and the 64 MP limit; the test host also ran OpenSim). A 1000 x 330 picture of three lines takes 0.15 s, the same picture upside down 0.3 s (read twice). A picture stored as an in-world texture adds about a second for its JPEG2000 decode (it first looked as if OCR took 2.6-3.5 s). Remaining errors are ordinary OCR slips (`O` for `0` in `COOP`, `PREZZ0`, a space inside `1, 45`); the price column now stays on its item's line. Parallel tile detection helped little (4.2 s to 4.0 s).
 - **A text-layer PDF is not OCR'd.** PdfPig reads the layer in block order, so a receipt's item names come out before its prices (seen on a supermarket receipt: 2265 characters, 196 lines). Only a scanned PDF's embedded page images reach the engine (up to 10).
-- **Ops.** `bin/preflight.sh` warns when the default engine is `paddle` and the model directory lacks `*det*.onnx` or `*rec*.onnx`. The models are not in git, so a new host needs them copied (about 23 MB).
+- **Ops.** `bin/preflight.sh` warns when the engine a default call reaches is `paddle` (named, or indra falling back to it) and the model directory lacks `*det*.onnx` or `*rec*.onnx`. The models are not in git, so a new host needs them copied (about 23 MB).
 
 ### Tests
-`OSSL_ApiOcrTest.cs` (empty source, unknown inventory source, unsupported engine, tesseract with no data path, async error via dataserver, plus live tesseract and live LLM tests; since 2026-11-06 also documents and notecards read without an engine; since 2026-11-07 `paddle` named without models, the default falling back to `llm`, and the default reading an image with the real models, which skips when they are absent) and `tests/OpenSim.Tests/OsOcrPdfTests.cs`. `PaddleOcrTests.cs` (14 tests of CTC decoding, box finding, line grouping, the character list, `Rotate180` and a missing or empty model directory, plus 4 with the real models: the Italian accents, a rendered page, an upside-down page and a blank page). 32 OCR tests passed on the server on 2026-11-07. Note the test named `TestPdfSourceReturnsNotYetAvailable` (line 109) predates the PDF implementation; its name is stale (body not re-read). `tests/OpenSim.Tests/OpenSim.Tests.csproj` gained a `System.Drawing.Common` reference for the test renderer.
+`OSSL_ApiOcrTest.cs` (empty source, unknown inventory source, unsupported engine, tesseract with no data path, async error via dataserver, plus live tesseract and live LLM tests; since 2026-11-06 also documents and notecards read without an engine; since 2026-11-07 `paddle` named without models, the default falling back to `llm`, and the default reading an image with the real models, which skips when they are absent) and `tests/OpenSim.Tests/OsOcrPdfTests.cs`. `PaddleOcrTests.cs` (14 tests of CTC decoding, box finding, line grouping, the character list, `Rotate180` and a missing or empty model directory, plus 4 with the real models: the Italian accents, a rendered page, an upside-down page and a blank page). 32 OCR tests passed on the server on 2026-11-07. Note the test named `TestPdfSourceReturnsNotYetAvailable` (line 109) predates the PDF implementation; its name is stale (body not re-read). `tests/OpenSim.Tests/OpenSim.Tests.csproj` gained a `System.Drawing.Common` reference for the test renderer. Since 2026-11-21: indra reading an image by either name and as the default (skipped without `indra_ocr`), indra named without Python returning an error that names `IndraPythonPath`, and the default falling back indra → paddle → llm; the paddle-default tests set the default to `paddle` explicitly.
 
 ### Example
 ```lsl

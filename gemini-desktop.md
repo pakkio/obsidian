@@ -1,12 +1,23 @@
 # gemini-desktop
 
-> Client desktop Electron per server MCP con Gemini.
+> Client desktop Electron + React + TypeScript per collegare server MCP all'API Google Gemini.
 
 ## Concetti
-[[MCP]] [[LLM]] [[TypeScript]]
+[[MCP]] [[LLM]] [[TypeScript]] [[JavaScript]]
 
 ## Panoramica
-Client desktop (Electron 30, Vite, React 18, TypeScript, MUI) che si collega a server MCP e usa l'API Google Gemini per la chat. Elenco dei server testati in `mcpServerTested.md`.
+Applicazione desktop (repo: https://github.com/pakkio/gemini-desktop) basata su **Electron 30**, **Vite 5**, **React 18** e **TypeScript** che funge da host grafico per server MCP usando Google Gemini come backend conversazionale. La compatibilità dei server testati è documentata in `mcpServerTested.md`.
+
+```mermaid
+flowchart LR
+  UI["React 18 + Vite UI<br>(Electron 30 Renderer)"] <--> Main["Electron Main Process"]
+  Main <-->|"stdio / SSE"| MCP["Server MCP configurati"]
+  Main <-->|"API"| Gem["Google Gemini API"]
+```
 
 ## Tech Stack
-Electron, React, TypeScript. Repo: https://github.com/pakkio/gemini-desktop
+- TypeScript, React 18, Electron 30, Vite, `electron-builder`.
+- Repository: https://github.com/pakkio/gemini-desktop (pubblico, verificato 2026-11-27)
+
+## Collegamenti
+[[MCP]], [[mcp-blender]], [[mcp-cck]], [[oslsl]]

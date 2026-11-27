@@ -1,9 +1,27 @@
 # jev-pakkio
 
-> One-pass option scoring with a local Gemma 3 4B, on Apple silicon via MLX or on
+> One-pass option scoring locale con Gemma 3 4B (MLX su Apple Silicon o PyTorch CUDA/CPU), Jev-Mem, Mercury e server MCP unificato (`v0.2.0`).
 
 ## Concetti
-[[LLM]] [[Python]]
+[[LLM]] [[Python]] [[MCP]]
+
+## Architettura One-Pass Option Scoring
+
+```mermaid
+flowchart LR
+  Ctx["Contesto C"] --> Prefill["Prefill singolo<br>(Gemma 3 4B MLX / PyTorch)"]
+  Prefill --> KV["Espansione KV-cache<br>su batch di K opzioni"]
+  Opts["Opzioni y_1 .. y_K"] --> KV
+  KV --> Fwd["Singolo forward pass<br>(zero decoding)"]
+  Fwd --> Soft["Log-prob + Softmax -> p(y_k | C)"]
+```
+
+## Formulazione matematica
+Senza generare alcun token in decoding autoregressivo, il modello valuta tutte le opzioni $y_k = (y_{k,1}, \dots, y_{k,L_k})$ in un singolo forward pass condividendo la KV-cache del contesto $C$:
+
+$$s_k = \sum_{t=1}^{L_k} \ln P\!\left(y_{k,t} \mid C, y_{k,<t}\right), \qquad p(k \mid C) = \frac{e^{s_k}}{\sum_{j=1}^{K} e^{s_j}}$$
+
+Aggiornamenti recenti (`v0.2.0`, 2026-10-06): server MCP unificato con supporto a **Jev-Mem** e **Mercury**, fix leak GPU e benchmark misto (`bench_mixed.py`, 100 domande choice/noul/score).
 
 ## Panoramica
 # jev_pakkio
@@ -84,7 +102,7 @@ scoring CLI and HTTP server.
 make setup       # uv sync (arm64 Python 3.12 venv) + download google/gemma-3-4b-it into models/ (gated; needs HF login)
 make serve       # start the HTTP server on :8000
 make health      # curl /health
-make re
+```
 
 ## Tech Stack
 - Linguaggi: Python (69)

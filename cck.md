@@ -1,12 +1,31 @@
 # cck
 
-> cck
+> Script C# per ChilloutVR (CCK / Unity) che replicano le chiamate LSL di Second Life, più tooling MCP per pilotare Blender e Unity da agenti AI.
 
 ## Concetti
-[[C Sharp]] [[JavaScript]] [[Python]] [[TypeScript]] [[Unity]]
+[[C Sharp]] [[JavaScript]] [[Python]] [[TypeScript]] [[Unity]] [[MCP]]
+
+## Equivalenti LSL per Unity / CCK
+
+| Script C# | Equivalente LSL | Guida |
+|---|---|---|
+| `CckChatLogger.cs` | `llSay`, `llInstantMessage` | `README_cck_chat.md` |
+| `CckChatListener.cs` | `llListen` | `README_cck_chat_listener.md` |
+| `CckDialog.cs`, `CckDialogLightToggle.cs` | `llDialog` | `README_cck_dialog.md` |
+| `CckFloatingText.cs`, `CckFloatingTextExample.cs` | `llSetText` | `README_cck_floatingtext.md` |
+
+## Pipeline MCP Blender + Unity
+
+```mermaid
+flowchart LR
+  Agent["Client AI (Claude / OpenCode)"] --> MB["[[mcp-blender]]<br>Modellazione GLB/FBX"]
+  Agent --> MU["[[mcp-cck]] / [[mcp-unity]]<br>Scena Unity + CCK"]
+  MB -->|"Export asset 3D"| MU
+  MU --> Scripts["Script C# LSL-like<br>(Chat · Dialog · FloatingText)"]
+```
 
 ## Panoramica
-Toolkit Unity (chat/dialog/floating text) più pipeline MCP per pilotare Unity e Blender da un agente LLM. README.md aggiunto il 2026-10-18 (esistono anche `README_cck_*.md` e `SETUP.md`).
+Toolkit Unity per mondi ChilloutVR (`CCK_4.0.1_Release.unitypackage`) più pipeline locale MCP (`mcp-pipeline/`, `mcp-unity-server/`, `skills/`). Repo: https://github.com/pakkio/cck (verificato 2026-11-27).
 
 ## Tech Stack
 - Linguaggi: TypeScript (78), JavaScript (78), Python (7), C# (6)

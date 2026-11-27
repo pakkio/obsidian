@@ -1,9 +1,24 @@
 # MSA
 
-> *A scalable, end-to-end trainable latent-memory framework for 100M-token contexts*
+> MSA (Memory Sparse Attention, EverMind-AI, arXiv:2603.23516): framework end-to-end differenziabile di memoria latente sparsa $\mathcal{O}(L)$ per contesti fino a 100M token con RoPE parallelo per documento.
 
 ## Concetti
-[[Python]]
+[[Python]] [[LLM]] [[RAG]]
+
+## Architettura Memory Sparse Attention
+
+```mermaid
+flowchart LR
+  Docs["Documenti (fino a 100M token)<br>Document-wise RoPE"] --> Pool["Chunk-Mean Pooling<br>(K_r routing keys su GPU, K/V su CPU)"]
+  Q["Query locale"] --> Router["Router Projector<br>(Cosine Similarity -> Top-k)"]
+  Pool --> Router
+  Router -->|"on-demand K/V"| Attn["Sparse Attention + Decoding<br>(Memory Interleave multi-hop)"]
+```
+
+## Complessità e routing
+Sostituendo l'attenzione densa $\mathcal{O}(L^2)$ con la selezione differenziabile dei Top-$k$ documenti compressi (chunk di dimensione $c$), la complessità scende a lineare rispetto alla lunghezza totale $L$:
+
+$$\mathrm{Attn}_{\text{MSA}}(Q) = \mathrm{softmax}\!\left(\frac{Q\,\big[K_{\text{loc}};\, K_{\text{Top-}k}\big]^\top}{\sqrt{d_k}}\right)\big[V_{\text{loc}};\, V_{\text{Top-}k}\big], \qquad \mathcal{O}(L) \ll \mathcal{O}(L^2)$$
 
 ## Panoramica
 # MSA: Memory Sparse Attention
@@ -48,7 +63,7 @@ On long-context QA and NIAH (Needle-in-a-Haystack) benchmarks, **MSA** surpasses
 
 MSA integrates **retrieval and generation** into a single differentiable loop. Document latent states (**K/V/Kᵣ**) are **chunk-mean pooled** for compression. A **router projector** computes relevance via cosine similarity (mean-pooled over heads, then token-wise max), selects **Top‑k documents**, then concatenates their **compressed K/V** with the query's local **K/V** for autoregressive decoding. Routing applies only to **upper layers**; lower layers keep **independent document processing** for hierarchical alignment.
 
-- **Parallel (document-wise) RoPE**: Each document resets positions from 0, preventing position drift between **train-short** and **infer-long**, enabling 64k trainin
+- **Parallel (document-wise) RoPE**: Each document resets positions from 0, preventing position drift between **train-short** and **infer-long**, enabling 64k training to extrapolate up to 100M tokens.
 
 ## Tech Stack
 - Linguaggi: Python (28)

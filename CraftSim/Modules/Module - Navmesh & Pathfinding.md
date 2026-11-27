@@ -23,6 +23,14 @@ Second Life has "pathfinding": the region builds a **navigation mesh** (navmesh)
 
 ## 1. Upstream OpenSimulator
 
+```mermaid
+flowchart LR
+  Geom["Region Terrain + Static Prims"] --> Recast["DotRecast Builder<br>(full / incremental tile rebuild)"]
+  Recast --> Mesh["NavMesh Tiles"]
+  LSL["llCreateCharacter · llNavigateTo · llPursue"] --> Detour["Detour Path Query + Crowd Steering"]
+  Mesh --> Detour --> Move["Character Movement Updates"]
+```
+
 Upstream has **no navmesh and no character API**: none of `llCreateCharacter`, `llNavigateTo`, `llPursue` or DotRecast exist in the source (checked on the June 2025 baseline tag and again on upstream master, HEAD `58c2118`, 2026-10-16). Its only pathfinding code is read-back of `OBJECT_PATHFINDING_TYPE` and `OBJECT_CHARACTER_TIME` in `llGetObjectDetails`, which is stub-level. A script calling `llNavigateTo` fails to compile there. Everything below is fork-only (commits `a733ddd015` navmesh, `16fb60e5c2` crowd steering, `caa58111a2` LSL functions, `e5370c460f` OSSL functions, all 2026-08-30; incremental and toggleable in `257c08f116`, 2026-09-02).
 
 ## 2. Is it on? (read this first)

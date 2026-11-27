@@ -47,6 +47,19 @@ Derived deltas (computed from the table, matching the repo docs):
 
 ## 2. Core runtime & frame pacing (code-verified)
 
+At the target simulation rate of $55\text{ SimFPS}$, each heartbeat has a nominal period of $T_{\text{frame}} = \frac{1000}{55} \approx 18.18\text{ ms}$. Frame pacing combines coarse sleep with a spin-wait tail:
+
+$$t_{\text{sleep}} = \begin{cases} t_{\text{rem}} - 0.5\text{ ms} & t_{\text{rem}} > 1.5\text{ ms} \\ 0 & \text{otherwise} \end{cases}, \qquad \Delta_{\text{events}} = \frac{496 - 333}{333} = +49.0\%, \qquad \Delta_{\text{RSS}} = \frac{465.9 - 1671.7}{1671.7} = -72.1\%$$
+
+```mermaid
+flowchart LR
+  HB["Scene Heartbeat (55 FPS / 18.18 ms)"] --> Work["Physics (ubODE) + ZEngine (4 workers, 5 ms quantum)"]
+  Work --> Check{"t_rem > 1.5 ms?"}
+  Check -->|"Sì"| Sleep["Thread.Sleep(t_rem - 0.5 ms)"]
+  Check -->|"No"| Spin["Thread.SpinWait(50) fino a framestart + frameTimeMS"]
+  Sleep --> Spin --> HB
+```
+
 - **Frame timer** (`OpenSim/Region/Framework/Scenes/Scene.cs:1868-1905`): after each heartbeat, `Thread.Sleep` for the bulk (`remaining - 0.5 ms`, only when `remaining > 1.5 ms`), then a `Thread.SpinWait(50)` loop until `framestart + frameTimeMS` using `Util.GetTimeStampMS()`. This replaced coarse sleep granularity drift. (It is a Sleep + spin tail, not a pure Stopwatch timer as the old note implied.)
 - **Thread pool** (`OpenSim/Region/Application/Application.cs:142-190`): bounds are `workerThreadsMin = 500`, `workerThreadsMax = 1000`, `iocpThreadsMin = 1000`, `iocpThreadsMax = 2000`; the code **clamps the runtime's *max* thread counts into those ranges** and calls `ThreadPool.SetMaxThreads(...)`. It does not raise the pool *minimums* (the min variables are the lower clamp for the max). Runtime change is possible with console `debug threadpool set worker|iocp min|max <n>` (`ServerBase.cs:434-485`).
 - **Asset HTTP handlers**: cached `XmlSerializer` statics (`AssetServerGetHandler.cs:51-53`) and no extra outer `Task.Run`; the handler awaits `m_AssetService.GetDataAsync` (lines 76-101).

@@ -1,95 +1,46 @@
 # llmwiki
 
-> llmwiki
+> Base di conoscenza personale LLM in stile Karpathy: ingestion di documenti e URL in pagine Markdown con `[[WikiLink]]`, query grounded con cache, grafo interattivo e lint automatico.
 
 ## Concetti
-[[JavaScript]] [[LLM]] [[Python]] [[TypeScript]]
+[[TypeScript]] [[Python]] [[JavaScript]] [[LLM]]
 
 ## Panoramica
-Base di conoscenza personale in stile Karpathy: un agente scompone i documenti in pagine Markdown collegate da `[[WikiLink]]` e risponde solo da quelle. CLI (`ingest`, `query`, `index`, `show`, `log`, `graph`), backend FastAPI e frontend Vite. README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 101 file.
+**llmwiki** (repo: https://github.com/pakkio/llmwiki, ultimo push 2026-04-30, metadati aggiornati 2026-11-24) trasforma documenti, testo incollato o URL in un wiki personale di pagine Markdown interconnesse tramite un loop agentico (DeepSeek V4-Flash). Le query rispondono **esclusivamente** da quanto ingerito nel wiki (nessuna allucinazione dai pesi di training), con caching delle risposte ripetute e controlli di integrità (`lint.py`: pagine orfane, gap, incoerenze).
 
-## Tech Stack
-- Linguaggi: Python (8), JavaScript (4), TypeScript (1)
-- File totali (scan): 101
-- Estensioni principali: .md=32, (noext)=19, .py=8, .tsx=8, .svg=6, .json=5, .js=4, .css=3
+Include CLI (`ingest`, `query`, `index`, `show`, `log`, `graph`), backend **FastAPI** (`api.py`) e frontend **React / TypeScript / Vite** (`frontend/`) con grafo force-directed interattivo.
+
+## Flusso operativo
+
+```mermaid
+flowchart LR
+  Src["Documento / Testo / URL"] --> Ing["ingest.py (Agente LLM)"]
+  Ing --> Wiki["Pagine Markdown + [[WikiLink]]<br>(wiki/)"]
+  Wiki --> Q["query.py + Cache<br>(risposte grounded)"]
+  Wiki --> L["lint.py<br>(orfane, gap, salute wiki)"]
+  Wiki --> UI["FastAPI (api.py) + Frontend TS/Vite<br>(Grafo & Ricerca)"]
+```
 
 ## Struttura (top-level)
-```
-__pycache__
-api.py
-display.py
-docs
-frontend
-ingest.py
-llm.py
-main.py
-pyproject.toml
-query.py
-uv.lock
-wiki
-wiki.py
+```text
+api.py          Backend FastAPI (health, readme, query, ingest, graph)
+main.py         CLI principale
+ingest.py       Pipeline di ingestion (file, testo, URL)
+query.py        Agente di query grounded su indice wiki
+lint.py         Verifica salute del wiki
+llm.py, wiki.py Wrapper LLM e gestione pagine Markdown
+frontend/       Web UI TypeScript/React (Vite)
+wiki/           Pagine Markdown generate (es. Transformer, RAG, Babilonia...)
+pyproject.toml  Python >= 3.12 (openai, fastapi, uvicorn, rich)
 ```
 
-## Documentazione presente nel repo
-- `docs/plans/2026-04-25-web-ui-design.md`
-- `docs/plans/2026-04-25-web-ui-plan.md`
-- `frontend/README.md`
-- `wiki/Attention Mechanism.md`
-- `wiki/Babilonia (città antica).md`
-- `wiki/Bernard Weber.md`
-- `wiki/Chunking Strategy.md`
-- `wiki/Colosseo.md`
-- `wiki/Colosso di Rodi.md`
-- `wiki/Embedding Model.md`
-- `wiki/Etemenanki.md`
-- `wiki/Faro di Alessandria.md`
-- `wiki/Giardini pensili di Babilonia.md`
-- `wiki/Hammurabi.md`
-- `wiki/Impero neo-babilonese.md`
-- `wiki/Large Language Model.md`
-- `wiki/Marduk.md`
-- `wiki/Mausoleo di Alicarnasso.md`
-- `wiki/Nabucodonosor II.md`
-- `wiki/Nuove sette meraviglie del mondo.md`
-- `wiki/Piramide di Cheope.md`
-- `wiki/Piramidi di Giza.md`
-- `wiki/Porta di Ishtar.md`
-- `wiki/Retrieval-Augmented Generation.md`
-- `wiki/Sette meraviglie del mondo.md`
-- `wiki/Statua di Zeus a Olimpia.md`
-- `wiki/Tempio di Artemide.md`
-- `wiki/Transformer.md`
-- `wiki/UNESCO.md`
-- `wiki/Vector Store.md`
-
-## Manifest
-### pyproject.toml
-```
-[project]
-name = "llmwiki"
-version = "0.1.0"
-requires-python = ">=3.12"
-dependencies = [
-    "openai>=1.0",
-    "python-dotenv>=1.0",
-    "rich>=15.0.0",
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
-]
-```
+## Tech Stack
+- **TypeScript / React** (`frontend/`), **Python 3.12+** (`FastAPI`, `uvicorn`, `openai`, `rich`, `uv`).
+- Repository: https://github.com/pakkio/llmwiki (pubblico, verificato 2026-11-27)
 
 ## Progetti correlati
-- [[agent]]
-- [[cck]]
-- [[chatgroup]]
-- [[gemmafunction]]
-- [[llmwiki1]]
-- [[local_llm]]
-- [[mcp-unity]]
-- [[mragent]]
-- [[nispa-ocr]]
-- [[opensim-cpp]]
-- [[rlm]]
+- [[llmwiki1]], [[skills]] (skill `/wiki`), [[mragent]], [[jev-rag]], [[fastobsidian]]
 
 ## Link
+- Repository: https://github.com/pakkio/llmwiki
 - Path locale: `/home/pakkio/w/llmwiki`

@@ -40,6 +40,21 @@ Measured **2026-10-17** on the live sim (region `PKC`, host `craft`), by running
 
 ## Method
 
+```mermaid
+flowchart LR
+  Tick["30 / 40 Support Tickets<br>(EN + IT)"] --> Call["osJevAskExt(state, questionsJson, model)"]
+  Call --> Q1["intent (choice)"]
+  Call --> Q2["angry (noul >= 0.5)"]
+  Call --> Q3["urgency (score -> 0..3)"]
+  Q1 --> Score["Accuracy · Latency · $/1000"]
+  Q2 --> Score
+  Q3 --> Score
+```
+
+Discrete urgency level and normalized 1,000-ticket cost:
+
+$$u = \min\!\big(3,\, \lfloor 4 s \rfloor\big), \qquad \text{Cost}_{1000} = 1000 \cdot c_{\text{call}}$$
+
 - Prompt: `"Support ticket: <text>"` with three typed questions in one request: `intent` (choice: `refund`, `replace`, `info`, `other`), `angry` (noul, yes/no probability), `urgency` (score over `low, medium, high, critical`).
 - 30 support tickets (English and a few Italian), each with a hand-written label for intent, angry yes/no and urgency level.
 - Scoring: intent correct if the chosen id equals the label; angry correct if `noul >= 0.5` matches the label; urgency level = `floor(score * 4)` capped at 3, reported exact and within one level (±1).

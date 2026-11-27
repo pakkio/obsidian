@@ -16,14 +16,34 @@ aliases:
 > [!WARNING] This hub was rebuilt on 2026-10-17
 > The previous `CraftSim.md` was lost: the file was found empty (0 bytes) and the empty version had already been committed. This page is a **reconstruction** from the other notes and from the repo, not a restore. The "Quick reference" below was re-read from the repo that day; descriptions of the topic pages are taken from the pages themselves. If you have the old version (Obsidian *File recovery*, MEGA version history), compare it against this one.
 
-CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a script engine that compiles LSL to CIL, plus a set of `os*` extensions (databases, queues, caches, machine learning, language models, typed decisions), content-addressed asset deduplication, an MCP server for driving the simulator from outside, and the CraftStorm viewers that connect to it. Repo: `pakkio/craftsim`. The viewers: `pakkio/craftstorm`, documented in [[CraftStorm]].
+CraftSim is a fork of OpenSimulator on .NET 10. Its centre is **ZEngine**, a script engine that compiles LSL to CIL, plus a set of `os*` extensions (databases, queues, caches, machine learning, language models, typed decisions), content-addressed asset deduplication, an MCP server for driving the simulator from outside, and the CraftStorm viewers that connect to it. Repo: `pakkio/craftsim` (private, verified HEAD `877767a` on 2026-11-24: ZEXT Scala-style showcase `scala_shop.lsl`, `isInstanceOf`/`asInstanceOf`, `list<T>` slicing, direct `llList2Float`/`llList2Key`/`llList2Vector`). The viewers: `pakkio/craftstorm`, documented in [[CraftStorm]].
+
+```mermaid
+flowchart LR
+  subgraph Viewers["Viewers & Agents"]
+    CS["[[CraftStorm]] (WebGL + C++)"]
+    AI["MCP Client (78 tools)"]
+  end
+  subgraph Grid["CraftSim (.NET 10)"]
+    Rob["Robust Grid + Hypergrid<br>(9203 / 9103)"]
+    Sim["OpenSim Region (UDP 9200/9201 · HTTP 9000)"]
+    ZE["[[ZEngine]] (LSL+ZEXT -> CIL JIT)"]
+    Ext["os* Extensions (OsDb · osAI/osJev · osML · Navmesh)"]
+    DB["SQLite / MySQL / PGSQL<br>(SHA-256 Asset Dedup)"]
+  end
+  CS <-->|"LLUDP / CAPS"| Sim
+  AI <-->|"MCP stdio/HTTP"| Sim
+  Sim <--> Rob
+  Sim --> ZE --> Ext
+  Sim <--> DB
+```
 
 ## 1. The engine and the language
 
 - **[[ZEngine]]**: the LSL-to-CIL compiler, scheduler, cooperative yielding, compiled-script cache.
 - **[[ZEXT Language Extensions]]**: reference for the syntax ZEngine adds on top of LSL (ternary, `??`, `|>`, slices, maps, f-strings, `switch`, `foreach`, the `->` async bind, `await { }`, timers, the preprocessor) and for `zengine desugar`.
 - **[[ZEXT Sugar and Async - Worked Examples]]**: the same features as runnable scripts with real output, the lowered LSL, and the traps found.
-- **[[ZEXT Syntax Sugar Index]]**: the 2026-10 syntax pass: braceless `#indent` blocks, `->` / `=>` arrows, `j"…"` JSON literals, `<< ID` heredocs, `defer` / `let` / `in` and friends, plus the rewritten `zengine desugar` and its verification report.
+- **[[ZEXT Syntax Sugar Index]]**: the 2026-10 syntax pass: braceless `#indent` blocks, `->` / `=>` arrows, `j"…"` JSON literals, `<< ID` heredocs, `defer` / `let` / `in` and friends, plus the rewritten `zengine desugar` and its verification report. Added 2026-11-20: `->` chains and per-bind `await` timeouts ([[ZEXT Arrows - Async Bind, Fat Arrow and Timers]]), Scala `for (x <- xs) yield e` ([[ZEXT For Comprehensions (Scala)]]), classes and `<T>` generics ([[ZEXT Classes and Generics]]).
 
 ## 2. The `os*` extensions
 

@@ -1,56 +1,37 @@
 # spirale
 
-> spirale
+> Calcolo in tempo $\mathcal{O}(1)$ e memoria $\mathcal{O}(1)$ di qualsiasi cella di matrici a spirale gigantesche (quadrate e rettangolari) senza allocarle in RAM, implementato in Python, Numba, C e CUDA con articolo LaTeX bilingue.
 
 ## Concetti
 [[C++]] [[CLI]] [[Python]]
 
 ## Panoramica
-Matrici a spirale gigantesche calcolate senza memorizzarle: valore di ogni cella in O(1) dal livello, in Python, Numba, C e CUDA. Articolo in inglese e italiano (`article.tex`, `article.it.tex`). README.md e RELEASE-NOTES.md aggiunti il 2026-10-18. Progetto con 23 file.
+Progetto locale (`/home/pakkio/w/spirale`, non pubblicato su GitHub `pakkio`) che confronta implementazioni Python, Numba, C (`spiral.c`, `spiral_rect.c`) e CUDA (`spiral.cu`, `spiral.ptx`) per calcolare direttamente il valore di ogni coordinata $(r, c)$ di una matrice a spirale $N \times N$ (o rettangolare $M \times N$) senza mai memorizzare la matrice. Corredato da articolo bilingue (`article.tex`, `article.it.tex`).
+
+## Formula in forma chiusa $\mathcal{O}(1)$
+Per una matrice quadrata $N \times N$ indicizzata $0 \le r, c < N$, l'anello (*layer*) di appartenenza è:
+
+$$k = \min(r,\, c,\, N - 1 - r,\, N - 1 - c)$$
+
+Il numero di celle negli anelli esterni precedenti e il lato $s = N - 2k$ dell'anello corrente forniscono il valore esatto in tempo costante $\mathcal{O}(1)$:
+
+$$V_0(k) = 4k(N - k), \qquad V(r, c) = V_0(k) + \begin{cases} c - k & r = k \\ (s - 1) + (r - k) & c = N - 1 - k \\ 2(s - 1) + (N - 1 - k - c) & r = N - 1 - k \\ 3(s - 1) + (N - 1 - k - r) & c = k \end{cases}$$
+
+## Confronto implementazioni
+
+```mermaid
+flowchart LR
+  Coord["Coordinate (r, c), dimensione N"] --> Layer["Anello k = min(r, c, N-1-r, N-1-c)<br>in O(1) tempo e O(1) RAM"]
+  Layer --> Py["Python / Numba<br>(spiral_no_mem.py)"]
+  Layer --> C["C nativo<br>(spiral.c / spiral_rect.c)"]
+  Layer --> CU["CUDA GPU<br>(spiral.cu / spiral.ptx)"]
+```
 
 ## Tech Stack
-- Linguaggi: Python (4), LaTeX (2), CUDA (1)
-- File totali (scan): 23
-- Estensioni principali: .py=4, (noext)=3, .aux=2, .out=2, .c=2, .tex=2, .pdf=2, .log=2
-
-## Struttura (top-level)
-```
-article.aux
-article.docx
-article.it.aux
-article.it.log
-article.it.out
-article.it.pdf
-article.it.tex
-article.it.toc
-article.log
-article.out
-article.pdf
-article.tex
-spiral
-spiral.c
-spiral.cu
-spiral.ptx
-spiral.py
-spiral_bench.py
-spiral_cuda
-spiral_no_mem.py
-spiral_rect
-spiral_rect.c
-test_rect.py
-```
+- Python (`spiral.py`, `spiral_no_mem.py`, `spiral_bench.py`, `test_rect.py`), C, CUDA, LaTeX (`article.tex`, `article.it.tex`).
 
 ## Progetti correlati
-- [[MegaFuse]]
-- [[assegna]]
-- [[craftstorm]]
-- [[libopenmetaverse]]
-- [[local_llm]]
-- [[opensim-cpp]]
-- [[rlm]]
-- [[search]]
-- [[subs]]
-- [[tbi]]
+- [[FMM]], [[ChessChallenge]], [[assegna]]
 
 ## Link
-- Path locale: `/home/pakkio/w/spirale`
+- Path locale: `/home/pakkio/w/spirale` (progetto locale)

@@ -1,9 +1,26 @@
 # jev-news
 
-> Small CLI scripts for web search via third-party APIs, and a Jev-based news digest
+> Pipeline CLI per raccolta bilanciata, deduplicazione semantica e rassegna stampa AI/tech (HTML, Markdown, terminale) basata su Serper, Jina Reader, Jev e LLM (`deepseek-v4.1-flash`).
 
 ## Concetti
 [[LLM]] [[Python]]
+
+## Pipeline della rassegna stampa
+
+```mermaid
+flowchart LR
+  S["Serper API + Jina Reader<br>(main.py / collect_news.py)"] --> J["ai-news.json<br>(raccolta bilanciata per area)"]
+  J --> Dedup["Unificazione storie<br>(containment + entità rare + Jaccard)"]
+  Dedup --> LLM["Titolo + riassunto single-pass<br>(deepseek-v4.1-flash, IA pulita)"]
+  LLM --> Out["format_news.py<br>HTML + Markdown + CLI"]
+```
+
+## Regola di unificazione delle storie (`--sim 0.62`)
+Due titoli con insiemi di token significativi $A$ e $B$ vengono unificati tramite **token containment** (con fallback a **Jaccard** su titoli brevi con meno di 3 token) o tramite entità rare condivise (`ALLCAPS` / `PascalCase`):
+
+$$C(A, B) = \frac{|A \cap B|}{\min(|A|, |B|)}, \qquad J(A, B) = \frac{|A \cap B|}{|A \cup B|}$$
+
+Aggiornamenti 2026-10-25: 5 sezioni allineate a `vpdmai-newsai-be` (*Business, Frontiers, Design, Regulation, Just for fun*), titolo+riassunto in un solo passaggio con revisione finale e resa italiana pulita (`AI` $\to$ `IA` fuori dai nomi propri).
 
 ## Panoramica
 # search

@@ -1,9 +1,35 @@
 # mragent
 
-> A lightweight, multi-role LLM agent with a persistent graph-based memory system and hybrid retrieval (FTS5 BM25 + embeddings + rerank). Designed for CLI-first workflows where you want an AI that can r
+> Agente LLM multi-ruolo CLI-first con memoria a grafo Cue–Tag–Content su SQLite e retrieval ibrido (FTS5 BM25 + embeddings FAISS + Reciprocal Rank Fusion + Cohere Rerank) con checkpointing OCR resiliente.
 
 ## Concetti
 [[AI Agents]] [[Database]] [[LLM]] [[Python]] [[RAG]]
+
+## Grafo Cue–Tag–Content e Retrieval Ibrido
+
+```mermaid
+flowchart LR
+  subgraph Graph["Memoria a grafo (memory.db)"]
+    Cue["Cue: 'GIL', 'python'"] --> Tag["Tag: 'concurrency'"]
+    Tag --> Cont["Content: testo chunk"]
+  end
+  Q["Query utente"] --> BM["FTS5 BM25"]
+  Q --> VEC["FAISS / Cosine Embeddings"]
+  Q --> GR["Traversal Cue -> Tag -> Content"]
+  BM --> RRF["Reciprocal Rank Fusion (RRF)"]
+  VEC --> RRF
+  GR --> RRF
+  RRF --> RR["Cohere Rerank (opzionale)<br>+ Recall citato e con costi"]
+```
+
+## Reciprocal Rank Fusion (RRF) e BM25
+Le graduatorie provenienti dai diversi motori di ricerca $r \in \mathcal{R}$ (BM25 lessicale, vettori FAISS, attraversamento grafo) sono fuse senza calibrazione di scala tramite **RRF** ($k = 60$ tipico):
+
+$$\mathrm{RRF}(d) = \sum_{r \in \mathcal{R}} \frac{1}{k + \mathrm{rank}_r(d)}$$
+
+Il punteggio lessicale BM25 di un documento $d$ per una query $Q$ è:
+
+$$\mathrm{BM25}(Q, d) = \sum_{q \in Q} \mathrm{IDF}(q) \cdot \frac{f(q, d)\,(k_1 + 1)}{f(q, d) + k_1 \left(1 - b + b\,\dfrac{|d|}{\mathrm{avgdl}}\right)}$$
 
 ## Panoramica
 # mragent
@@ -88,8 +114,9 @@ python main.py remember "The GIL prevents true thread parallelism in CPython."
 python main.py remember --cues "GIL,CPython,threads" --tags "python,concurrency" \
     "The GIL prevents true thread parallelism in CPython."
 
-# Store from a file
-pyt
+# Store from a file (with resilient .ocr_cache/ checkpointing on PDFs)
+python main.py remember --file report.pdf
+```
 
 ## Tech Stack
 - Linguaggi: Python (9)
